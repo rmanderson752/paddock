@@ -35,6 +35,8 @@ hand, run `npm run db:stats` to rebuild the derived tables.
 | `npm run db:seed` | **Recreates** `data/paddock.db` with the reference data in `scripts/seed.ts` (no sales) |
 | `npm run db:scrape` | Scrapes completed BaT auctions for every configured generation, then refreshes stats. Supports `--dry-run` and `--car "e30 m3"` |
 | `npm run db:stats` | Recomputes `generation_stats` and `category_indices` from the `sales` table |
+| `npm run db:refresh` | The full refresh the schedule runs: scrape → stats → search index, recorded in `refresh_runs` and `data/logs/refresh.log` |
+| `npm run schedule:install` / `status` / `uninstall` | macOS launchd agent that runs `db:refresh` every Monday and Thursday at 00:01 |
 | `npm run db:clean` | One-off cleanup of early scraper data (parts listings, mis-filed variants). Idempotent |
 | `npm run db:studio` | Drizzle Studio for browsing the database |
 
@@ -61,6 +63,27 @@ pure math; `src/lib/stats.ts` writes it back to the database.
   $284,700). Quarterly change is the equal-weighted change in each model's
   median sale price across the two most recent 90-day windows.
 
+## Scheduled refresh
+
+The database refreshes itself **every Monday and Thursday at 00:01** (local
+time). Each run scrapes every configured BaT model page, inserts sales it
+hasn't seen, recomputes stats and indices, and rebuilds the search index. Runs
+are recorded in `refresh_runs` (shown on the admin dashboard, which also has a
+"Refresh now" button) and appended to `data/logs/refresh.log`.
+
+Two ways to run the schedule:
+
+- **On a Mac** — `npm run schedule:install` installs a launchd agent
+  (`~/Library/LaunchAgents/com.paddock.refresh.plist`) that runs
+  `npm run db:refresh` in this directory. launchd runs a missed 00:01 slot when
+  the machine wakes, so a sleeping laptop still catches up. `npm run
+  schedule:status` shows whether it's loaded and the last log lines;
+  `npm run schedule:uninstall` removes it.
+- **On a server** — set `REFRESH_SCHEDULE_ENABLED=true` and the Next.js server
+  process (`next start`) schedules itself via `src/instrumentation.ts`.
+  Override the times with `REFRESH_SCHEDULE="mon 00:01, thu 00:01"`; times are
+  in the process's local timezone (`TZ`).
+
 ## Project layout
 
 ```
@@ -80,11 +103,15 @@ src/
     data.ts            read queries (server only)
     stats-core.ts      pure statistics (shared with client + scripts)
     stats.ts           recompute derived tables (server only)
+    refresh.ts         full refresh job (scrape → stats → search index) + run history
+    scheduler.ts       weekly in-process scheduler (started by instrumentation.ts)
+    scraper/bat.ts     Bring a Trailer scraper
     alerts.ts          evaluate price alerts against current data
     auth/              sessions (JWT cookie), server actions, admin check
     db/                Drizzle schema + SQLite connection + FTS5 helpers
   proxy.ts             protects /portfolio, /watchlist, /alerts, /profile, /admin
-scripts/               seed, scrape, clean, refresh-stats
+  instrumentation.ts   starts the in-app refresh scheduler when enabled
+scripts/               seed, scrape, clean, refresh-stats, refresh-db, schedule/ (launchd)
 data/                  paddock.db (git-ignored)
 ```
 
@@ -103,6 +130,8 @@ Chart colors live in `src/lib/theme.ts`.
 | `ADMIN_EMAILS` | Comma-separated. Without it the first account created is the admin |
 | `NEXT_PUBLIC_APP_URL` | Used for the sitemap and robots.txt |
 | `DATABASE_PATH` | Defaults to `./data/paddock.db` |
+| `REFRESH_SCHEDULE_ENABLED` | `true` to run the refresh schedule inside the Next.js server |
+| `REFRESH_SCHEDULE` | Defaults to `mon 00:01, thu 00:01` (server local time) |
 
 ## Deployment note
 

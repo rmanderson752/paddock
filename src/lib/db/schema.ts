@@ -142,3 +142,17 @@ export const priceAlerts = sqliteTable("price_alerts", {
 }, (table) => ({
   userIdx: index("idx_alerts_user").on(table.userId, table.isActive),
 }));
+
+// Scheduled / manual database refresh history (see lib/refresh.ts)
+export const refreshRuns = sqliteTable("refresh_runs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  trigger: text("trigger").notNull(),          // 'scheduler' | 'manual' | 'cli'
+  startedAt: text("started_at").notNull(),
+  finishedAt: text("finished_at"),
+  status: text("status").notNull(),            // 'running' | 'ok' | 'error'
+  salesInserted: integer("sales_inserted"),
+  pagesFetched: integer("pages_fetched"),
+  message: text("message"),
+}, (table) => ({
+  startedIdx: index("idx_refresh_runs_started").on(table.startedAt),
+}));

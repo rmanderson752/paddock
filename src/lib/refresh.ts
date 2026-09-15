@@ -1,0 +1,151 @@
+// Server-only — the full database refresh: scrape new Bring a Trailer results,
+// recompute stats and indices, rebuild the search index. Every run is recorded
+// in `refresh_runs` (shown on the admin dashboard) and appended to
+// data/logs/refresh.log. Runs from the scheduler, the CLI and the admin page.
+
+import * as fs from "fs";
+import * as path from "path";
+import { sqlite, rebuildFtsIndex } from "./db";
+import { scrapeBaT } from "./scraper/bat";
+import { refreshAllStats } from "./stats";
+
+export type RefreshTrigger = "scheduler" | "manual" | "cli";
+
+export interface RefreshRun {
+  id: string;
+  trigger: RefreshTrigger;
+  startedAt: string;
+  finishedAt: string | null;
+  status: "running" | "ok" | "error";
+  salesInserted: number | null;
+  pagesFetched: number | null;
+  message: string | null;
+}
+
+export interface RefreshOptions {
+  trigger: RefreshTrigger;
+  /** Progress output (the file log is always written) */
+  log?: (message: string) => void;
+}
+
+/** Created lazily so databases seeded before this table existed keep working. */
+export function ensureRefreshRunsTable(): void {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS refresh_runs (
+      id TEXT PRIMARY KEY,
+      trigger TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      finished_at TEXT,
+      status TEXT NOT NULL,
+      sales_inserted INTEGER,
+      pages_fetched INTEGER,
+      message TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_refresh_runs_started ON refresh_runs(started_at);
+  `);
+}
+
+const logDir = path.resolve(process.env.LOG_DIR ?? "data/logs");
+
+function appendLog(line: string): void {
+  try {
+    fs.mkdirSync(logDir, { recursive: true });
+    fs.appendFileSync(path.join(logDir, "refresh.log"), `${new Date().toISOString()} ${line}\n`);
+  } catch {
+    // Logging must never break the refresh itself
+  }
+}
+
+let inFlight: Promise<RefreshRun> | null = null;
+
+/** True while a refresh is running in this process. */
+export function isRefreshRunning(): boolean {
+  return inFlight !== null;
+}
+
+/**
+ * Run a full refresh. Concurrent callers share the in-flight run rather than
+ * scraping twice.
+ */
+export function refreshDatabase(options: RefreshOptions): Promise<RefreshRun> {
+  if (inFlight) return inFlight;
+  inFlight = runRefresh(options).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+async function runRefresh({ trigger, log }: RefreshOptions): Promise<RefreshRun> {
+  ensureRefreshRunsTable();
+  const emit = (message: string) => {
+    appendLog(message);
+    log?.(message);
+  };
+
+  const id = crypto.randomUUID();
+  const startedAt = new Date().toISOString();
+  sqlite
+    .prepare("INSERT INTO refresh_runs (id, trigger, started_at, status) VALUES (?, ?, ?, 'running')")
+    .run(id, trigger, startedAt);
+  emit(`[${trigger}] refresh started`);
+
+  try {
+    const scrape = await scrapeBaT({ log: emit });
+    emit(`scrape complete: ${scrape.pagesFetched} pages, ${scrape.totalMatched} matched, ${scrape.totalInserted} new sales`);
+
+    const stats = refreshAllStats();
+    emit(`stats refreshed as of ${stats.asOf}: ${stats.generationsUpdated} generations, ${stats.categories} categories`);
+
+    rebuildFtsIndex();
+    emit("search index rebuilt");
+
+    const message = `${scrape.totalInserted} new sale${scrape.totalInserted === 1 ? "" : "s"} · data through ${stats.asOf}`;
+    const finishedAt = new Date().toISOString();
+    sqlite
+      .prepare(
+        "UPDATE refresh_runs SET finished_at = ?, status = 'ok', sales_inserted = ?, pages_fetched = ?, message = ? WHERE id = ?"
+      )
+      .run(finishedAt, scrape.totalInserted, scrape.pagesFetched, message, id);
+    emit(`[${trigger}] refresh finished: ${message}`);
+
+    return {
+      id, trigger, startedAt, finishedAt, status: "ok",
+      salesInserted: scrape.totalInserted, pagesFetched: scrape.pagesFetched, message,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const finishedAt = new Date().toISOString();
+    sqlite
+      .prepare("UPDATE refresh_runs SET finished_at = ?, status = 'error', message = ? WHERE id = ?")
+      .run(finishedAt, message, id);
+    emit(`[${trigger}] refresh FAILED: ${message}`);
+    return {
+      id, trigger, startedAt, finishedAt, status: "error",
+      salesInserted: null, pagesFetched: null, message,
+    };
+  }
+}
+
+/** Most recent runs, newest first. */
+export function getRecentRefreshRuns(limit = 10): RefreshRun[] {
+  ensureRefreshRunsTable();
+  const rows = sqlite
+    .prepare(
+      `SELECT id, trigger, started_at, finished_at, status, sales_inserted, pages_fetched, message
+       FROM refresh_runs ORDER BY started_at DESC LIMIT ?`
+    )
+    .all(limit) as {
+      id: string; trigger: RefreshTrigger; started_at: string; finished_at: string | null;
+      status: RefreshRun["status"]; sales_inserted: number | null; pages_fetched: number | null; message: string | null;
+    }[];
+  return rows.map((r) => ({
+    id: r.id,
+    trigger: r.trigger,
+    startedAt: r.started_at,
+    finishedAt: r.finished_at,
+    status: r.status,
+    salesInserted: r.sales_inserted,
+    pagesFetched: r.pages_fetched,
+    message: r.message,
+  }));
+}

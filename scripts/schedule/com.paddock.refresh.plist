@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Paddock database refresh — Monday and Thursday at 00:01 local time.
+       Rendered by scripts/schedule/install.sh; placeholders are replaced. -->
+  <key>Label</key>
+  <string>com.paddock.refresh</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NPM__</string>
+    <string>run</string>
+    <string>--silent</string>
+    <string>db:refresh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__PROJECT_DIR__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__NODE_BIN_DIR__:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <!-- Recorded as the run's trigger in refresh_runs -->
+    <key>PADDOCK_REFRESH_TRIGGER</key>
+    <string>scheduler</string>
+  </dict>
+
+  <!-- launchd runs a missed interval when the machine wakes, unlike cron -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Weekday</key>
+      <integer>1</integer>
+      <key>Hour</key>
+      <integer>0</integer>
+      <key>Minute</key>
+      <integer>1</integer>
+    </dict>
+    <dict>
+      <key>Weekday</key>
+      <integer>4</integer>
+      <key>Hour</key>
+      <integer>0</integer>
+      <key>Minute</key>
+      <integer>1</integer>
+    </dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>__PROJECT_DIR__/data/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__PROJECT_DIR__/data/logs/launchd.err.log</string>
+</dict>
+</plist>

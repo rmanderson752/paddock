@@ -15,6 +15,14 @@ interface AdminAction {
 
 const actions: AdminAction[] = [
   {
+    key: "refresh",
+    title: "Refresh data from Bring a Trailer",
+    description: "Scrapes every configured model page for new results, then recomputes stats and the search index. Takes a couple of minutes — this is what the scheduled job runs.",
+    endpoint: "/api/admin/refresh-data",
+    label: "Refresh now",
+    busyLabel: "Refreshing… (≈2 min)",
+  },
+  {
     key: "stats",
     title: "Recompute stats & indices",
     description: "Rebuilds generation stats and category indices from the sales table",

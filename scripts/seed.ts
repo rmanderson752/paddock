@@ -155,6 +155,18 @@ sqlite.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_alerts_user ON price_alerts(user_id, is_active);
+
+  CREATE TABLE IF NOT EXISTS refresh_runs (
+    id TEXT PRIMARY KEY,
+    trigger TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    status TEXT NOT NULL,
+    sales_inserted INTEGER,
+    pages_fetched INTEGER,
+    message TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_refresh_runs_started ON refresh_runs(started_at);
 `);
 
 console.log("Tables created");

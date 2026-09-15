@@ -10,7 +10,15 @@ import { sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { AdminActions } from "@/components/features/admin/AdminActions";
 import { getDataAsOfDate } from "@/lib/data";
+import { getRecentRefreshRuns } from "@/lib/refresh";
+import { DEFAULT_SCHEDULE, describeSchedule, parseSchedule, nextRunAt } from "@/lib/scheduler";
 import { formatDate } from "@/lib/utils";
+
+function formatStamp(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+  });
+}
 
 export const metadata: Metadata = { title: "Admin | Paddock" };
 
@@ -20,6 +28,11 @@ export default async function AdminPage() {
   if (!isAdmin(session)) redirect("/");
 
   const asOf = getDataAsOfDate();
+  const refreshRuns = getRecentRefreshRuns(8);
+  const scheduleSpec = process.env.REFRESH_SCHEDULE || DEFAULT_SCHEDULE;
+  const schedule = parseSchedule(scheduleSpec);
+  const inAppSchedulerOn = process.env.REFRESH_SCHEDULE_ENABLED === "true";
+  const nextRun = nextRunAt(schedule);
 
   // Gather stats
   const genCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.generations).get()!.count;
@@ -64,8 +77,11 @@ export default async function AdminPage() {
       <main className="mx-auto max-w-6xl px-4 py-6">
         <h1 className="font-serif text-2xl mb-1">Admin Dashboard</h1>
         <p className="text-sm text-sand-muted mb-6">
-          Sale data through {formatDate(asOf)}. Run <code className="text-[12px]">npm run db:scrape</code> to
-          pull new auction results, then recompute stats below.
+          Sale data through {formatDate(asOf)}. Scheduled refresh: {describeSchedule(schedule)} —{" "}
+          {inAppSchedulerOn
+            ? `in-app scheduler on, next run ${formatStamp(nextRun.toISOString())}`
+            : "in-app scheduler off (set REFRESH_SCHEDULE_ENABLED=true, or use the launchd agent — npm run schedule:install)"}
+          .
         </p>
 
         {/* Stats grid */}
@@ -90,6 +106,47 @@ export default async function AdminPage() {
         {/* Actions */}
         <h2 className="text-sm font-medium text-sand mb-3">Actions</h2>
         <AdminActions />
+
+        {/* Refresh history */}
+        <div className="mt-8">
+          <h2 className="text-sm font-medium text-sand mb-3">Refresh History</h2>
+          <Card>
+            {refreshRuns.length === 0 ? (
+              <p className="text-sm text-sand-muted">
+                No refreshes recorded yet. The first scheduled run, <code className="text-[12px]">npm run db:refresh</code>,
+                or the button above will appear here.
+              </p>
+            ) : (
+              <div className="divide-y divide-surface-border">
+                {refreshRuns.map((run) => (
+                  <div key={run.id} className="flex items-start justify-between gap-4 py-2 text-sm">
+                    <div className="min-w-0">
+                      <span
+                        className={
+                          run.status === "ok"
+                            ? "text-forest-light"
+                            : run.status === "error"
+                              ? "text-maroon-light"
+                              : "text-sand-subtle"
+                        }
+                      >
+                        {run.status === "ok" ? "✓" : run.status === "error" ? "✕" : "…"}
+                      </span>
+                      <span className="text-sand ml-2">{formatStamp(run.startedAt)}</span>
+                      <span className="text-sand-faint ml-2 text-[11px]">{run.trigger}</span>
+                      <div className="text-[12px] text-sand-muted truncate">{run.message ?? "running"}</div>
+                    </div>
+                    {run.finishedAt && (
+                      <div className="text-[11px] text-sand-faint shrink-0">
+                        {Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)}s
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
 
         {/* Zero sales warnings */}
         {zeroSalesGens.length > 0 && (

@@ -14,8 +14,12 @@
     "db:scrape": "npx tsx scripts/scrape-bat.ts",
     "db:clean": "npx tsx scripts/clean-data.ts",
     "db:stats": "npx tsx scripts/refresh-stats.ts",
+    "db:refresh": "npx tsx scripts/refresh-db.ts",
     "db:generate": "npx drizzle-kit generate",
-    "db:studio": "npx drizzle-kit studio"
+    "db:studio": "npx drizzle-kit studio",
+    "schedule:install": "bash scripts/schedule/install.sh",
+    "schedule:uninstall": "bash scripts/schedule/uninstall.sh",
+    "schedule:status": "bash scripts/schedule/status.sh"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -46,6 +50,7 @@
     "eslint-config-next": "16.1.6",
     "jsdom": "^29.0.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^4.1.0"
   }
