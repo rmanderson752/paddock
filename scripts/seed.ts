@@ -12,6 +12,7 @@
  *   npm run db:seed -- --force     # required for a remote (Turso) database
  */
 
+import "./env";
 import * as fs from "fs";
 import * as path from "path";
 import { client, isLocalFile, dbReady } from "../src/lib/db";

@@ -1,6 +1,7 @@
 // One-time script to insert web-researched auction results for cars with zero BaT data
 // Run: npx tsx scripts/insert-researched-sales.ts
 
+import "./env";
 import { randomUUID } from "crypto";
 import { client, batchWrite, dbReady } from "../src/lib/db";
 import { refreshAllStats } from "../src/lib/stats";

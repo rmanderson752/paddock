@@ -43,6 +43,7 @@ export function MarketIndices({ indices, series = {} }: MarketIndicesProps) {
                 <div className="mt-2">
                   {points.length > 1 ? (
                     <Sparkline
+                      id={`index-${idx.category}`}
                       data={points}
                       trend={idx.changeQuarterly >= 0 ? "positive" : "negative"}
                       height={32}

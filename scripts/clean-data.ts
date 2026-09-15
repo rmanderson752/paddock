@@ -17,6 +17,7 @@
  *   npx tsx scripts/clean-data.ts
  */
 
+import "./env";
 import { refreshAllStats } from "../src/lib/stats";
 import { client, dbReady, rebuildFtsIndex } from "../src/lib/db";
 import type { InArgs } from "@libsql/client";

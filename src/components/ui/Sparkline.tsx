@@ -1,6 +1,3 @@
-"use client";
-
-import { useId } from "react";
 import { cn } from "@/lib/utils";
 import { chartColors } from "@/lib/theme";
 
@@ -10,6 +7,19 @@ interface SparklineProps {
   width?: number;
   height?: number;
   className?: string;
+  /** Stable id for the gradient; derived from the data when omitted */
+  id?: string;
+}
+
+// Deterministic, so server and client agree (React's useId drifts when a
+// client component renders directly under an async server component).
+function hashOf(input: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
 }
 
 export function Sparkline({
@@ -18,12 +28,11 @@ export function Sparkline({
   width = 200,
   height = 36,
   className,
+  id,
 }: SparklineProps) {
-  // Hooks must run unconditionally — before the empty-data early return
-  const reactId = useId();
-  const gradientId = `sparkline-gradient-${reactId}`;
-
   if (data.length < 2) return null;
+
+  const gradientId = `sparkline-${id ?? hashOf(`${trend}:${data.join(",")}`)}`;
 
   const min = Math.min(...data);
   const max = Math.max(...data);

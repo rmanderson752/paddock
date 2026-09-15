@@ -10,6 +10,7 @@
  * (scrape + stats + search index, recorded in refresh_runs) use `npm run db:refresh`.
  */
 
+import "./env";
 import { scrapeBaT } from "../src/lib/scraper/bat";
 import { refreshAllStats } from "../src/lib/stats";
 import { rebuildFtsIndex } from "../src/lib/db";

@@ -7,6 +7,7 @@
  *   npm run db:refresh
  */
 
+import "./env";
 import { refreshDatabase } from "../src/lib/refresh";
 
 // The launchd agent sets PADDOCK_REFRESH_TRIGGER=scheduler so automated runs

@@ -132,6 +132,7 @@ export function SortableResults({
                 {showSparklines && sparkData.length > 2 && (
                   <div className="w-16 shrink-0 hidden sm:block">
                     <Sparkline
+                      id={`result-${car.id}`}
                       data={sparkData}
                       trend={isPositive ? "positive" : "negative"}
                       height={24}

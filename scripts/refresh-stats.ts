@@ -5,6 +5,7 @@
  *   npm run db:stats
  */
 
+import "./env";
 import { refreshAllStats } from "../src/lib/stats";
 
 refreshAllStats()

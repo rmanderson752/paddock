@@ -31,6 +31,7 @@ export function WatchlistCard({ car, isAuthenticated, sparklineData = [] }: Watc
         {sparkData.length > 1 && (
           <div className="mb-2">
             <Sparkline
+              id={`watch-${car.id}`}
               data={sparkData}
               trend={isPositive ? "positive" : "negative"}
               height={36}
