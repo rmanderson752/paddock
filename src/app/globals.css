@@ -1,26 +1,112 @@
 @import "tailwindcss";
 
+/*
+  Paddock palette — sand paper, darker-sand panels, wealthy green accents.
+
+  Colors are context-aware: `bg-surface` panels (cards, tiles, inputs,
+  dropdowns) sit a shade darker than the page, and anything painted solid
+  green (`bg-forest`, `bg-forest-dark`) flips its text to cream. `@theme inline`
+  makes utilities resolve the variables at the element, so `text-sand` is dark
+  ink on sand and cream on green.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Sand page context */
+  --page: #eee5d3;
+  --hover: #e6dbc6;
+  --ink: #1a2622;
+  --ink-muted: #4a5753;
+  --ink-subtle: #6a7671;
+  --ink-faint: #97978b;
+  --line: #d6c8ab;
+  --line-hover: #bfae8b;
+  --positive: #1b6a54;
+  --negative: #7c6a56;
+  --gold: #12503f;
+  --tint-positive: rgba(27, 106, 84, 0.14);
+  --tint-negative: rgba(124, 106, 86, 0.16);
+}
+
+/* Darker-sand panel context */
+.bg-surface,
+.panel {
+  --hover: #dccfb4;
+  --line: #ccbc9b;
+  --line-hover: #b5a27d;
+}
+
+/* Solid green surfaces flip to cream ink */
+.bg-forest,
+.bg-forest-dark {
+  --hover: #17604c;
+  --ink: #f3ede1;
+  --ink-muted: #c7d1cb;
+  --ink-subtle: #9fb3aa;
+  --ink-faint: #7e948a;
+  --line: #2a6b57;
+  --line-hover: #3a8069;
+  --positive: #7fdcb8;
+  --negative: #d9c9b2;
+  --gold: #e2be74;
+  --tint-positive: rgba(127, 220, 184, 0.18);
+  --tint-negative: rgba(217, 201, 178, 0.18);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Fixed colors */
+  --color-cream: #f3ede1;
+  --color-forest: #12503f;
+  --color-forest-dark: #0d3b2f;
+  --color-surface: #e4d9c2;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Context-aware colors */
+  --color-surface-page: var(--page);
+  --color-surface-hover: var(--hover);
+  --color-surface-border: var(--line);
+  --color-surface-border-hover: var(--line-hover);
+
+  --color-sand: var(--ink);
+  --color-sand-muted: var(--ink-muted);
+  --color-sand-subtle: var(--ink-subtle);
+  --color-sand-faint: var(--ink-faint);
+
+  --color-forest-light: var(--positive);
+  --color-forest-muted: var(--tint-positive);
+
+  /* Negative / "down" semantics — a warm taupe, so green stays the only accent */
+  --color-maroon-light: var(--negative);
+  --color-maroon-muted: var(--tint-negative);
+
+  --color-gold: var(--gold);
+
+  --font-serif: "DM Serif Display", serif;
+  --font-sans: "DM Sans", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: #12503f;
+  color: #f3ede1;
+}
+
+select option {
+  background: #e4d9c2;
+  color: #1a2622;
+}
+
+/* Subtle page fade-in */
+main {
+  animation: fadeIn 200ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
