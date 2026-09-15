@@ -104,13 +104,16 @@ export async function login(
     if (!user) {
       return { success: false, error: "Invalid email or password" };
     }
+    if (!user.passwordHash) {
+      return { success: false, error: "This account signs in with Google — use the Google button above." };
+    }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return { success: false, error: "Invalid email or password" };
     }
 
-    await createSession({ userId: user.id, email: user.email, name: user.name });
+    await createSession({ userId: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl });
   } catch (e) {
     if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
     return { success: false, error: "Something went wrong. Please try again." };

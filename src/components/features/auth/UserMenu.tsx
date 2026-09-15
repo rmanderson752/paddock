@@ -7,10 +7,11 @@ import { logout } from "@/lib/auth/actions";
 interface UserMenuProps {
   name: string | null;
   email: string;
+  avatarUrl?: string | null;
   isAdmin?: boolean;
 }
 
-export function UserMenu({ name, email, isAdmin }: UserMenuProps) {
+export function UserMenu({ name, email, avatarUrl, isAdmin }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -39,9 +40,19 @@ export function UserMenu({ name, email, isAdmin }: UserMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="w-7 h-7 rounded-full bg-forest flex items-center justify-center text-[11px] font-medium text-cream">
-          {initials}
-        </span>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external Google avatar, unknown host
+          <img
+            src={avatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="w-7 h-7 rounded-full object-cover bg-forest"
+          />
+        ) : (
+          <span className="w-7 h-7 rounded-full bg-forest flex items-center justify-center text-[11px] font-medium text-cream">
+            {initials}
+          </span>
+        )}
         <span className="hidden lg:inline">{name ?? email}</span>
       </button>
 

@@ -135,12 +135,31 @@ Chart colors live in `src/lib/theme.ts`.
 | --- | --- |
 | `JWT_SECRET` | Required in production. `openssl rand -base64 32` |
 | `ADMIN_EMAILS` | Comma-separated. Without it the first account created is the admin |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Enables "Continue with Google" (see below) |
 | `NEXT_PUBLIC_APP_URL` | Used for the sitemap and robots.txt |
 | `DATABASE_PATH` | Local SQLite file, defaults to `./data/paddock.db` |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Production database on Turso; the URL overrides `DATABASE_PATH` |
 | `CRON_SECRET` | Protects `/api/cron/refresh` (required on Vercel) |
 | `REFRESH_SCHEDULE_ENABLED` | `true` to run the refresh schedule inside a long-running Next.js server |
 | `REFRESH_SCHEDULE` | Defaults to `mon 00:01, thu 00:01` (server local time) |
+
+## Sign in with Google
+
+Optional. Create an OAuth client in the
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+(APIs & Services → Credentials → Create credentials → OAuth client ID → Web
+application) with these **Authorized redirect URIs**:
+
+```
+https://<your-domain>/api/auth/google/callback
+http://localhost:3000/api/auth/google/callback
+```
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` and the button appears on
+the login and signup pages. The flow is plain OpenID Connect
+(`src/lib/auth/google.ts`): the ID token is verified against Google's keys,
+an existing password account with the same verified email is linked rather
+than duplicated, and Google-only accounts simply have no password.
 
 ## Deploying to Vercel + Turso
 
@@ -154,7 +173,8 @@ Chart colors live in `src/lib/theme.ts`.
    ```
 2. **Import the GitHub repo** in Vercel (Add New → Project) and set the
    Production environment variables: `JWT_SECRET`, `ADMIN_EMAILS`,
-   `NEXT_PUBLIC_APP_URL`, `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `CRON_SECRET`.
+   `NEXT_PUBLIC_APP_URL`, `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `CRON_SECRET`
+   (plus `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` for Google sign-in).
 3. **Deploy.** The cron in `vercel.json` registers automatically. Sign up on
    the live site with an `ADMIN_EMAILS` address to get the admin dashboard,
    where refresh runs are listed and can be triggered by hand.

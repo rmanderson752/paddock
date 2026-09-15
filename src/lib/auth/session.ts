@@ -20,6 +20,7 @@ export interface SessionPayload {
   userId: string;
   email: string;
   name: string | null;
+  avatarUrl?: string | null;
 }
 
 export async function createSession(payload: SessionPayload) {
@@ -52,6 +53,7 @@ export async function getSession(): Promise<SessionPayload | null> {
       userId: payload.userId as string,
       email: payload.email as string,
       name: (payload.name as string) ?? null,
+      avatarUrl: (payload.avatarUrl as string) ?? null,
     };
   } catch {
     return null;
@@ -73,6 +75,7 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
       userId: payload.userId as string,
       email: payload.email as string,
       name: (payload.name as string) ?? null,
+      avatarUrl: (payload.avatarUrl as string) ?? null,
     };
   } catch {
     return null;

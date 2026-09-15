@@ -33,6 +33,9 @@ export default async function ProfilePage() {
   ]);
   const name = user?.name ?? session.name;
   const memberSince = user?.createdAt ? formatDate(user.createdAt.slice(0, 10)) : null;
+  const hasPassword = Boolean(user?.passwordHash);
+  const usesGoogle = Boolean(user?.googleId);
+  const avatarUrl = user?.avatarUrl ?? session.avatarUrl ?? null;
 
   const initials = (name ?? session.email)
     .split(" ")
@@ -56,15 +59,21 @@ export default async function ProfilePage() {
         <div className="max-w-xl space-y-4">
           {/* Avatar + Name */}
           <Card className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-forest flex items-center justify-center text-xl font-medium text-cream shrink-0">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- external Google avatar, unknown host
+              <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-full object-cover bg-forest shrink-0" />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-forest flex items-center justify-center text-xl font-medium text-cream shrink-0">
+                {initials}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="text-sand font-medium truncate">{name ?? "User"}</div>
               <div className="text-sm text-sand-subtle truncate">{session.email}</div>
-              {memberSince && (
-                <div className="text-[11px] text-sand-faint mt-0.5">Member since {memberSince}</div>
-              )}
+              <div className="text-[11px] text-sand-faint mt-0.5">
+                {memberSince && `Member since ${memberSince}`}
+                {usesGoogle && `${memberSince ? " · " : ""}Signed in with Google`}
+              </div>
             </div>
           </Card>
 
@@ -83,7 +92,16 @@ export default async function ProfilePage() {
           </div>
 
           <ProfileDetailsForm name={name} email={session.email} />
-          <ChangePasswordForm />
+          {hasPassword ? (
+            <ChangePasswordForm />
+          ) : (
+            <Card>
+              <h2 className="text-sm font-medium text-sand mb-1">Password</h2>
+              <p className="text-sm text-sand-muted">
+                This account signs in with Google, so there&apos;s no password to manage.
+              </p>
+            </Card>
+          )}
 
           {/* Sign Out */}
           <form action={logout}>

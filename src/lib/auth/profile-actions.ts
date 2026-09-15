@@ -46,7 +46,7 @@ export async function updateProfile(
       .run();
 
     // The session token carries the display name — reissue it
-    await createSession({ userId: session.userId, email: session.email, name: parsed.data.name });
+    await createSession({ userId: session.userId, email: session.email, name: parsed.data.name, avatarUrl: session.avatarUrl ?? null });
     revalidatePath("/profile");
     return { success: true, message: "Profile updated" };
   } catch {
@@ -71,6 +71,9 @@ export async function changePassword(
   try {
     const user = await db.select().from(users).where(eq(users.id, session.userId)).get();
     if (!user) return { success: false, error: "Account not found" };
+    if (!user.passwordHash) {
+      return { success: false, error: "This account signs in with Google and has no password." };
+    }
 
     const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
     if (!valid) return { success: false, error: "Current password is incorrect" };

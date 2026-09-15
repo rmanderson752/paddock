@@ -8,7 +8,7 @@ import { UserMenu } from "@/components/features/auth/UserMenu";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
-  user?: { name: string | null; email: string; isAdmin?: boolean } | null;
+  user?: { name: string | null; email: string; avatarUrl?: string | null; isAdmin?: boolean } | null;
 }
 
 const navItems = [
@@ -48,7 +48,7 @@ export function Header({ user }: HeaderProps) {
             </Link>
           ))}
           {user ? (
-            <UserMenu name={user.name} email={user.email} isAdmin={user.isAdmin} />
+            <UserMenu name={user.name} email={user.email} avatarUrl={user.avatarUrl} isAdmin={user.isAdmin} />
           ) : (
             <Link
               href="/login"
@@ -62,7 +62,7 @@ export function Header({ user }: HeaderProps) {
         {/* Mobile: account access lives here; the rest is in the bottom tab bar */}
         <div className="sm:hidden ml-auto flex items-center">
           {user ? (
-            <UserMenu name={user.name} email={user.email} isAdmin={user.isAdmin} />
+            <UserMenu name={user.name} email={user.email} avatarUrl={user.avatarUrl} isAdmin={user.isAdmin} />
           ) : (
             <Link
               href="/login"

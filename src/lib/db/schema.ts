@@ -94,12 +94,15 @@ export const categoryIndices = sqliteTable("category_indices", {
   updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
-// Users
+// Users — password accounts have a password_hash; Google accounts have a
+// google_id (an account can have both after linking by verified email)
 export const users = sqliteTable("users", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
   name: text("name"),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"),
+  googleId: text("google_id").unique(),
+  avatarUrl: text("avatar_url"),
   currency: text("currency").notNull().default("USD"), // preferred display currency
   ...timestamps,
 });

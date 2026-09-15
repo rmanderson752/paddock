@@ -122,7 +122,9 @@ const SCHEMA_SQL = `
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
     name TEXT,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
+    google_id TEXT UNIQUE,
+    avatar_url TEXT,
     currency TEXT NOT NULL DEFAULT 'USD',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))

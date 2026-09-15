@@ -1,6 +1,8 @@
 import { AuthForm } from "@/components/features/auth/AuthForm";
+import { GoogleSignInButton, OrDivider } from "@/components/features/auth/GoogleSignInButton";
 import { LogoMark } from "@/components/ui/Logo";
 import { signup } from "@/lib/auth/actions";
+import { isGoogleConfigured } from "@/lib/auth/google";
 import Link from "next/link";
 import { safeRedirectPath } from "@/lib/auth/redirect";
 
@@ -11,6 +13,7 @@ export default async function SignupPage({
 }) {
   const { redirect } = await searchParams;
   const redirectTo = safeRedirectPath(redirect, "");
+  const googleEnabled = isGoogleConfigured();
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -23,7 +26,13 @@ export default async function SignupPage({
           Create your account
         </h1>
 
-        <div className="rounded-xl border-[0.5px] border-surface-border bg-surface p-6">
+        <div className="rounded-xl border-[0.5px] border-surface-border bg-surface p-6 space-y-4">
+          {googleEnabled && (
+            <>
+              <GoogleSignInButton redirectTo={redirectTo || undefined} label="Sign up with Google" />
+              <OrDivider />
+            </>
+          )}
           <AuthForm mode="signup" action={signup} redirectTo={redirectTo || undefined} />
         </div>
       </div>
