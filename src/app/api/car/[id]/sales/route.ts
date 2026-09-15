@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
     const timeframe = request.nextUrl.searchParams.get("timeframe") ?? "all";
-    const sales = getSalesForGeneration(id, timeframe);
+    const sales = await getSalesForGeneration(id, timeframe);
 
     return NextResponse.json({ id, timeframe, sales });
   } catch {

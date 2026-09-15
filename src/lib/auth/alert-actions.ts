@@ -45,10 +45,10 @@ export async function createAlert(
   const { generationId, alertType, thresholdPrice } = parsed.data;
 
   try {
-    const gen = db.select({ id: generations.id }).from(generations).where(eq(generations.id, generationId)).get();
+    const gen = await db.select({ id: generations.id }).from(generations).where(eq(generations.id, generationId)).get();
     if (!gen) return { success: false, error: "Car not found" };
 
-    const existing = db
+    const existing = await db
       .select({ id: priceAlerts.id })
       .from(priceAlerts)
       .where(eq(priceAlerts.userId, session.userId))
@@ -57,7 +57,7 @@ export async function createAlert(
       return { success: false, error: `You can have up to ${MAX_ALERTS_PER_USER} alerts` };
     }
 
-    db.insert(priceAlerts)
+    await db.insert(priceAlerts)
       .values({
         id: crypto.randomUUID(),
         userId: session.userId,
@@ -80,7 +80,7 @@ export async function deleteAlert(alertId: string): Promise<AlertActionResult> {
   if (!session) return { success: false, error: "Not authenticated" };
 
   try {
-    db.delete(priceAlerts)
+    await db.delete(priceAlerts)
       .where(and(eq(priceAlerts.id, alertId), eq(priceAlerts.userId, session.userId)))
       .run();
     revalidatePath("/alerts");
@@ -95,7 +95,7 @@ export async function setAlertActive(alertId: string, isActive: boolean): Promis
   if (!session) return { success: false, error: "Not authenticated" };
 
   try {
-    db.update(priceAlerts)
+    await db.update(priceAlerts)
       .set({ isActive, updatedAt: new Date().toISOString() })
       .where(and(eq(priceAlerts.id, alertId), eq(priceAlerts.userId, session.userId)))
       .run();

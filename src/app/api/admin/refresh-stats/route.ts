@@ -10,11 +10,11 @@ export async function POST() {
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    if (!isAdmin(session)) {
+    if (!(await isAdmin(session))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const summary = refreshAllStats();
+    const summary = await refreshAllStats();
     revalidatePath("/", "layout");
 
     return NextResponse.json({

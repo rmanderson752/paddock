@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const data = getGenerationWithDetails(id);
+    const data = await getGenerationWithDetails(id);
 
     if (!data) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });

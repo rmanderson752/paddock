@@ -15,6 +15,7 @@
     "db:clean": "npx tsx scripts/clean-data.ts",
     "db:stats": "npx tsx scripts/refresh-stats.ts",
     "db:refresh": "npx tsx scripts/refresh-db.ts",
+    "db:export": "bash scripts/export-for-turso.sh",
     "db:generate": "npx drizzle-kit generate",
     "db:studio": "npx drizzle-kit studio",
     "schedule:install": "bash scripts/schedule/install.sh",
@@ -22,8 +23,8 @@
     "schedule:status": "bash scripts/schedule/status.sh"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.8.0",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",
@@ -41,7 +42,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

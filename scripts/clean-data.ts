@@ -17,111 +17,104 @@
  *   npx tsx scripts/clean-data.ts
  */
 
-import Database from "better-sqlite3";
-import * as fs from "fs";
-import * as path from "path";
 import { refreshAllStats } from "../src/lib/stats";
-import { rebuildFtsIndex } from "../src/lib/db";
-
-const dbPath = path.resolve("data/paddock.db");
-if (!fs.existsSync(dbPath)) {
-  console.error("Database not found at data/paddock.db. Run `npm run db:seed` first.");
-  process.exit(1);
-}
-
-const db = new Database(dbPath);
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+import { client, dbReady, rebuildFtsIndex } from "../src/lib/db";
+import type { InArgs } from "@libsql/client";
 
 const uuid = () => crypto.randomUUID();
 
-function genId(name: string): string | null {
-  const row = db.prepare("SELECT id FROM generations WHERE name = ?").get(name) as { id: string } | undefined;
-  return row?.id ?? null;
+async function exec(sql: string, args: InArgs = []): Promise<number> {
+  const res = await client.execute({ sql, args });
+  return res.rowsAffected;
 }
 
-function modelId(makeSlug: string, modelSlug: string): string | null {
-  const row = db
-    .prepare(
-      `SELECT m.id FROM models m JOIN makes mk ON mk.id = m.make_id WHERE mk.slug = ? AND m.slug = ?`
-    )
-    .get(makeSlug, modelSlug) as { id: string } | undefined;
-  return row?.id ?? null;
+async function genId(name: string): Promise<string | null> {
+  const res = await client.execute({ sql: "SELECT id FROM generations WHERE name = ?", args: [name] });
+  const id = res.rows[0]?.id;
+  return id ? String(id) : null;
 }
 
-function deleteSales(genName: string, where: string, params: unknown[] = []): void {
-  const id = genId(genName);
+async function modelId(makeSlug: string, modelSlug: string): Promise<string | null> {
+  const res = await client.execute({
+    sql: `SELECT m.id FROM models m JOIN makes mk ON mk.id = m.make_id WHERE mk.slug = ? AND m.slug = ?`,
+    args: [makeSlug, modelSlug],
+  });
+  const id = res.rows[0]?.id;
+  return id ? String(id) : null;
+}
+
+async function deleteSales(genName: string, where: string): Promise<void> {
+  const id = await genId(genName);
   if (!id) return;
-  const res = db.prepare(`DELETE FROM sales WHERE generation_id = ? AND (${where})`).run(id, ...params);
-  if (res.changes) console.log(`  ${genName}: removed ${res.changes} (${where})`);
+  const changes = await exec(`DELETE FROM sales WHERE generation_id = ? AND (${where})`, [id]);
+  if (changes) console.log(`  ${genName}: removed ${changes} (${where})`);
 }
 
-const run = db.transaction(() => {
+async function run() {
+  await dbReady();
   // 1. Non-vehicle listings — BaT vehicle listings always carry a model year.
-  const parts = db.prepare("DELETE FROM sales WHERE source = 'bat' AND year IS NULL").run();
-  console.log(`Removed ${parts.changes} non-vehicle BaT listings`);
+  const parts = await exec("DELETE FROM sales WHERE source = 'bat' AND year IS NULL");
+  console.log(`Removed ${parts} non-vehicle BaT listings`);
 
   // 2. Listings that are a different model than the generation they were filed under.
   console.log("Removing mismatched listings:");
-  deleteSales("R33 GT-R", "condition_notes NOT LIKE '%GT-R%'");
-  deleteSales("R34 GT-R V-Spec", "condition_notes NOT LIKE '%GT-R%'");
-  deleteSales("R34 GT-R", "condition_notes NOT LIKE '%GT-R%'");
-  deleteSales("MK4 Supra Turbo", "condition_notes NOT LIKE '%Turbo%'");
-  deleteSales("992 GT3 RS", "condition_notes NOT LIKE '%GT3 RS%'");
-  deleteSales("997 GT3 RS 4.0", "condition_notes LIKE '%GT3 Cup%'");
-  deleteSales("997 GT3 RS", "condition_notes LIKE '%GT3 Cup%'");
-  deleteSales("993 GT2", "condition_notes NOT LIKE '%GT2%'");
-  deleteSales("F355 Berlinetta", "condition_notes LIKE '%F355 Challenge%'");
-  deleteSales("F355", "condition_notes LIKE '%F355 Challenge%'");
-  deleteSales("964 Turbo 3.3", "condition_notes LIKE '%RUF%'");
-  deleteSales("964 Turbo 3.6", "condition_notes LIKE '%RUF%'");
+  await deleteSales("R33 GT-R", "condition_notes NOT LIKE '%GT-R%'");
+  await deleteSales("R34 GT-R V-Spec", "condition_notes NOT LIKE '%GT-R%'");
+  await deleteSales("R34 GT-R", "condition_notes NOT LIKE '%GT-R%'");
+  await deleteSales("MK4 Supra Turbo", "condition_notes NOT LIKE '%Turbo%'");
+  await deleteSales("992 GT3 RS", "condition_notes NOT LIKE '%GT3 RS%'");
+  await deleteSales("997 GT3 RS 4.0", "condition_notes LIKE '%GT3 Cup%'");
+  await deleteSales("997 GT3 RS", "condition_notes LIKE '%GT3 Cup%'");
+  await deleteSales("993 GT2", "condition_notes NOT LIKE '%GT2%'");
+  await deleteSales("F355 Berlinetta", "condition_notes LIKE '%F355 Challenge%'");
+  await deleteSales("F355", "condition_notes LIKE '%F355 Challenge%'");
+  await deleteSales("964 Turbo 3.3", "condition_notes LIKE '%RUF%'");
+  await deleteSales("964 Turbo 3.6", "condition_notes LIKE '%RUF%'");
 
   // 3a. The 360 page mixes Modena/Spider with the Challenge Stradale — split them.
-  const csId = genId("360 Challenge Stradale");
+  const csId = await genId("360 Challenge Stradale");
   if (csId) {
-    let modenaId = genId("360 Modena / Spider");
+    let modenaId = await genId("360 Modena / Spider");
     if (!modenaId) {
-      const m = modelId("ferrari", "360");
+      const m = await modelId("ferrari", "360");
       if (m) {
         modenaId = uuid();
-        db.prepare(
+        await exec(
           `INSERT INTO generations (id, model_id, name, slug, year_start, year_end, chassis_code, category, description)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).run(
-          modenaId, m, "360 Modena / Spider", "360-modena", 1999, 2005, null, "supercar",
-          "The first aluminium-chassis Ferrari. 3.6L V8, gated six-speed or F1 paddles. The attainable modern Ferrari."
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            modenaId, m, "360 Modena / Spider", "360-modena", 1999, 2005, null, "supercar",
+            "The first aluminium-chassis Ferrari. 3.6L V8, gated six-speed or F1 paddles. The attainable modern Ferrari.",
+          ]
         );
         console.log("  Created generation: 360 Modena / Spider");
       }
     }
     if (modenaId) {
-      const moved = db
-        .prepare(
-          "UPDATE sales SET generation_id = ? WHERE generation_id = ? AND condition_notes NOT LIKE '%Challenge Stradale%'"
-        )
-        .run(modenaId, csId);
-      if (moved.changes) console.log(`  Moved ${moved.changes} Modena/Spider sales out of the Challenge Stradale`);
+      const moved = await exec(
+        "UPDATE sales SET generation_id = ? WHERE generation_id = ? AND condition_notes NOT LIKE '%Challenge Stradale%'",
+        [modenaId, csId]
+      );
+      if (moved) console.log(`  Moved ${moved} Modena/Spider sales out of the Challenge Stradale`);
     }
   }
 
   // 3b. Both 964 Turbo generations were scraped from the same page — split by model year.
-  const t33 = genId("964 Turbo 3.3");
-  const t36 = genId("964 Turbo 3.6");
+  const t33 = await genId("964 Turbo 3.3");
+  const t36 = await genId("964 Turbo 3.6");
   if (t33 && t36) {
-    const a = db.prepare("UPDATE sales SET generation_id = ? WHERE generation_id = ? AND year <= 1992").run(t33, t36);
-    const b = db.prepare("UPDATE sales SET generation_id = ? WHERE generation_id = ? AND year >= 1993").run(t36, t33);
-    if (a.changes || b.changes) console.log(`  964 Turbo: re-filed ${a.changes} sales to 3.3 and ${b.changes} to 3.6 by model year`);
+    const a = await exec("UPDATE sales SET generation_id = ? WHERE generation_id = ? AND year <= 1992", [t33, t36]);
+    const b = await exec("UPDATE sales SET generation_id = ? WHERE generation_id = ? AND year >= 1993", [t36, t33]);
+    if (a || b) console.log(`  964 Turbo: re-filed ${a} sales to 3.3 and ${b} to 3.6 by model year`);
   }
 
   // 3c. The NSX Type R held a copy of the NA1 data — there is no Type R data yet.
-  const typeR = genId("NSX Type R");
+  const typeR = await genId("NSX Type R");
   if (typeR) {
-    db.prepare("DELETE FROM sales WHERE generation_id = ?").run(typeR);
-    db.prepare("DELETE FROM generation_stats WHERE generation_id = ?").run(typeR);
-    db.prepare("DELETE FROM watchlist_items WHERE generation_id = ?").run(typeR);
-    db.prepare("DELETE FROM portfolio_items WHERE generation_id = ?").run(typeR);
-    db.prepare("DELETE FROM price_alerts WHERE generation_id = ?").run(typeR);
-    db.prepare("DELETE FROM generations WHERE id = ?").run(typeR);
+    for (const table of ["sales", "generation_stats", "watchlist_items", "portfolio_items", "price_alerts"]) {
+      await exec(`DELETE FROM ${table} WHERE generation_id = ?`, [typeR]);
+    }
+    await exec("DELETE FROM generations WHERE id = ?", [typeR]);
     console.log("  Removed NSX Type R (duplicate of NSX data)");
   }
 
@@ -162,34 +155,35 @@ const run = db.transaction(() => {
 
   console.log("Renaming generations:");
   for (const r of renames) {
-    const id = genId(r.from);
+    const id = await genId(r.from);
     if (!id) continue;
-    db.prepare(
-      `UPDATE generations SET name = ?, slug = ?, year_start = ?, year_end = ?, chassis_code = ?, description = ?, updated_at = datetime('now') WHERE id = ?`
-    ).run(r.to, r.slug, r.yearStart, r.yearEnd, r.chassis, r.description, id);
+    await exec(
+      `UPDATE generations SET name = ?, slug = ?, year_start = ?, year_end = ?, chassis_code = ?, description = ?, updated_at = datetime('now') WHERE id = ?`,
+      [r.to, r.slug, r.yearStart, r.yearEnd, r.chassis, r.description, id]
+    );
     if (r.from !== r.to) console.log(`  ${r.from} → ${r.to}`);
   }
 
   // 5. Duplicate records (same generation + source URL) — keep the earliest inserted.
-  const dupes = db
-    .prepare(
-      `DELETE FROM sales WHERE id IN (
-         SELECT s.id FROM sales s
-         JOIN sales k ON k.generation_id = s.generation_id AND k.source_url = s.source_url
-         WHERE s.source_url IS NOT NULL AND k.rowid < s.rowid
-       )`
-    )
-    .run();
-  console.log(`Removed ${dupes.changes} duplicate sales`);
+  const dupes = await exec(
+    `DELETE FROM sales WHERE id IN (
+       SELECT s.id FROM sales s
+       JOIN sales k ON k.generation_id = s.generation_id AND k.source_url = s.source_url
+       WHERE s.source_url IS NOT NULL AND k.rowid < s.rowid
+     )`
+  );
+  console.log(`Removed ${dupes} duplicate sales`);
+
+  // 6. Recompute everything derived from sales, and re-index the renamed cars for search.
+  const summary = await refreshAllStats();
+  await rebuildFtsIndex();
+  console.log(
+    `\nStats refreshed as of ${summary.asOf}: ${summary.generationsUpdated} generations updated, ` +
+    `${summary.generationsCleared} without sales, ${summary.categories} category indices. Search index rebuilt.`
+  );
+}
+
+run().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
-
-run();
-db.close();
-
-// 6. Recompute everything derived from sales, and re-index the renamed cars for search.
-const summary = refreshAllStats();
-rebuildFtsIndex();
-console.log(
-  `\nStats refreshed as of ${summary.asOf}: ${summary.generationsUpdated} generations updated, ` +
-  `${summary.generationsCleared} without sales, ${summary.categories} category indices. Search index rebuilt.`
-);

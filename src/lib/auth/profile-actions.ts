@@ -40,7 +40,7 @@ export async function updateProfile(
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
 
   try {
-    db.update(users)
+    await db.update(users)
       .set({ name: parsed.data.name, updatedAt: new Date().toISOString() })
       .where(eq(users.id, session.userId))
       .run();
@@ -69,14 +69,14 @@ export async function changePassword(
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
 
   try {
-    const user = db.select().from(users).where(eq(users.id, session.userId)).get();
+    const user = await db.select().from(users).where(eq(users.id, session.userId)).get();
     if (!user) return { success: false, error: "Account not found" };
 
     const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
     if (!valid) return { success: false, error: "Current password is incorrect" };
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
-    db.update(users)
+    await db.update(users)
       .set({ passwordHash, updatedAt: new Date().toISOString() })
       .where(eq(users.id, session.userId))
       .run();

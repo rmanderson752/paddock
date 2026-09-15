@@ -9,11 +9,11 @@ export async function POST() {
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    if (!isAdmin(session)) {
+    if (!(await isAdmin(session))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    rebuildFtsIndex();
+    await rebuildFtsIndex();
 
     return NextResponse.json({ message: "Search index rebuilt successfully" });
   } catch {

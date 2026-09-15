@@ -1,7 +1,10 @@
-// Server-only data layer — reads from SQLite via Drizzle
+// Server-only data layer — reads from SQLite/Turso via Drizzle
 // DO NOT import this file from client components (use types.ts for shared types)
+//
+// Every query is a network round trip on Turso, so list pages fetch in one
+// JOIN and per-id lookups are batched with inArray rather than looped.
 
-import { db, searchFts } from "./db";
+import { db, searchFts, dbReady } from "./db";
 import { eq, desc, sql, like, or, and, gte, lte, asc, inArray } from "drizzle-orm";
 import * as schema from "./db/schema";
 import type {
@@ -73,26 +76,37 @@ function baseQuery() {
 // Single-entity lookups
 // =============================================
 
-export function getMake(id: string): Make | undefined {
-  const row = db.select().from(schema.makes).where(eq(schema.makes.id, id)).get();
+export async function getMake(id: string): Promise<Make | undefined> {
+  await dbReady();
+  const row = await db.select().from(schema.makes).where(eq(schema.makes.id, id)).get();
   return row ? { id: row.id, name: row.name, slug: row.slug } : undefined;
 }
 
-export function getMakeBySlug(slug: string): Make | undefined {
-  const row = db.select().from(schema.makes).where(eq(schema.makes.slug, slug)).get();
+export async function getMakeBySlug(slug: string): Promise<Make | undefined> {
+  await dbReady();
+  const row = await db.select().from(schema.makes).where(eq(schema.makes.slug, slug)).get();
   return row ? { id: row.id, name: row.name, slug: row.slug } : undefined;
 }
 
-export function getModel(id: string): Model | undefined {
-  const row = db.select().from(schema.models).where(eq(schema.models.id, id)).get();
+export async function getModel(id: string): Promise<Model | undefined> {
+  await dbReady();
+  const row = await db.select().from(schema.models).where(eq(schema.models.id, id)).get();
   return row ? { id: row.id, makeId: row.makeId, name: row.name, slug: row.slug } : undefined;
 }
 
-export function getGenerationWithDetails(id: string): GenerationWithDetails | null {
-  const row = baseQuery()
-    .where(eq(schema.generations.id, id))
-    .get();
+export async function getGenerationWithDetails(id: string): Promise<GenerationWithDetails | null> {
+  await dbReady();
+  const row = await baseQuery().where(eq(schema.generations.id, id)).get();
   return row ? rowToGenerationWithDetails(row) : null;
+}
+
+/** Several generations in one query; missing ids are skipped, input order kept. */
+export async function getGenerationsWithDetailsByIds(ids: string[]): Promise<GenerationWithDetails[]> {
+  if (ids.length === 0) return [];
+  await dbReady();
+  const rows = await baseQuery().where(inArray(schema.generations.id, ids)).all();
+  const byId = new Map(rows.map((r) => [r.gen.id, rowToGenerationWithDetails(r)]));
+  return ids.map((id) => byId.get(id)).filter((g): g is GenerationWithDetails => !!g);
 }
 
 // =============================================
@@ -103,20 +117,21 @@ export function getGenerationWithDetails(id: string): GenerationWithDetails | nu
  * Completed sales for a generation, oldest first. Bid-not-met listings stay in
  * the database for the record but are never shown as sales.
  */
-export function getSalesForGeneration(
+export async function getSalesForGeneration(
   generationId: string,
   timeframe?: string,
   asOf?: string
-): Sale[] {
+): Promise<Sale[]> {
+  await dbReady();
   const conditions = [eq(schema.sales.generationId, generationId), eq(schema.sales.sold, true)];
 
   const years: Record<string, number> = { "1y": 1, "3y": 3, "5y": 5 };
   if (timeframe && years[timeframe]) {
-    const end = asOf ?? getDataAsOfDate();
+    const end = asOf ?? (await getDataAsOfDate());
     conditions.push(gte(schema.sales.saleDate, shiftIsoDate(end, { years: -years[timeframe] })));
   }
 
-  const rows = db.select().from(schema.sales)
+  const rows = await db.select().from(schema.sales)
     .where(and(...conditions))
     .orderBy(schema.sales.saleDate)
     .all();
@@ -149,70 +164,72 @@ export function getActiveListingsForGeneration(): ActiveListing[] {
 // Collection queries (optimized with JOINs)
 // =============================================
 
-export function getAllGenerationsWithDetails(): GenerationWithDetails[] {
-  return baseQuery().all().map(rowToGenerationWithDetails);
+export async function getAllGenerationsWithDetails(): Promise<GenerationWithDetails[]> {
+  await dbReady();
+  return (await baseQuery().all()).map(rowToGenerationWithDetails);
 }
 
-export function getGenerationsByCategory(category: string): GenerationWithDetails[] {
-  return baseQuery()
-    .where(eq(schema.generations.category, category))
-    .all()
-    .map(rowToGenerationWithDetails);
+export async function getGenerationsByCategory(category: string): Promise<GenerationWithDetails[]> {
+  await dbReady();
+  const rows = await baseQuery().where(eq(schema.generations.category, category)).all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
-export function getGenerationsByMakeSlug(makeSlug: string): GenerationWithDetails[] {
-  return baseQuery()
-    .where(eq(schema.makes.slug, makeSlug))
-    .all()
-    .map(rowToGenerationWithDetails);
+export async function getGenerationsByMakeSlug(makeSlug: string): Promise<GenerationWithDetails[]> {
+  await dbReady();
+  const rows = await baseQuery().where(eq(schema.makes.slug, makeSlug)).all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
-export function getGenerationsByMake(makeId: string): GenerationWithDetails[] {
-  return baseQuery()
-    .where(eq(schema.makes.id, makeId))
-    .all()
-    .map(rowToGenerationWithDetails);
+export async function getGenerationsByMake(makeId: string): Promise<GenerationWithDetails[]> {
+  await dbReady();
+  const rows = await baseQuery().where(eq(schema.makes.id, makeId)).all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
-export function getTopMovers(direction: "gainers" | "losers", limit = 8): GenerationWithDetails[] {
+export async function getTopMovers(direction: "gainers" | "losers", limit = 8): Promise<GenerationWithDetails[]> {
+  await dbReady();
   const orderCol = direction === "gainers"
     ? desc(schema.generationStats.trendPercentage)
     : asc(schema.generationStats.trendPercentage);
 
-  return baseQuery()
-    .orderBy(orderCol)
-    .limit(limit)
-    .all()
-    .map(rowToGenerationWithDetails);
+  const rows = await baseQuery().orderBy(orderCol).limit(limit).all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
-export function getRecentSales(limit = 10): (Sale & { generation: GenerationWithDetails })[] {
-  const rows = db.select().from(schema.sales)
+/** Latest completed sales with their car, in one query. */
+export async function getRecentSales(limit = 10): Promise<(Sale & { generation: GenerationWithDetails })[]> {
+  await dbReady();
+  const rows = await db
+    .select({
+      sale: schema.sales,
+      gen: schema.generations,
+      model: schema.models,
+      make: schema.makes,
+      stats: schema.generationStats,
+    })
+    .from(schema.sales)
+    .innerJoin(schema.generations, eq(schema.sales.generationId, schema.generations.id))
+    .innerJoin(schema.models, eq(schema.generations.modelId, schema.models.id))
+    .innerJoin(schema.makes, eq(schema.models.makeId, schema.makes.id))
+    .innerJoin(schema.generationStats, eq(schema.generationStats.generationId, schema.generations.id))
     .where(eq(schema.sales.sold, true))
-    .orderBy(desc(schema.sales.saleDate))
-    .limit(limit * 3)
+    .orderBy(desc(schema.sales.saleDate), desc(schema.sales.createdAt))
+    .limit(limit)
     .all();
 
-  const results: (Sale & { generation: GenerationWithDetails })[] = [];
-  for (const row of rows) {
-    if (results.length >= limit) break;
-    const gen = getGenerationWithDetails(row.generationId);
-    if (gen) {
-      results.push({ ...rowToSale(row), generation: gen });
-    }
-  }
-  return results;
+  return rows.map((r) => ({ ...rowToSale(r.sale), generation: rowToGenerationWithDetails(r) }));
 }
 
-export function searchGenerations(query: string): GenerationWithDetails[] {
+export async function searchGenerations(query: string): Promise<GenerationWithDetails[]> {
   if (!query || query.length < 2) return [];
+  await dbReady();
 
   // Try FTS5 first for ranked results
-  const ftsIds = searchFts(query);
+  const ftsIds = await searchFts(query);
   if (ftsIds.length > 0) {
-    return baseQuery()
-      .where(inArray(schema.generations.id, ftsIds))
-      .all()
+    const rows = await baseQuery().where(inArray(schema.generations.id, ftsIds)).all();
+    return rows
       .map(rowToGenerationWithDetails)
       // Preserve FTS rank order
       .sort((a, b) => ftsIds.indexOf(a.id) - ftsIds.indexOf(b.id));
@@ -220,7 +237,7 @@ export function searchGenerations(query: string): GenerationWithDetails[] {
 
   // Fallback to LIKE search
   const pattern = `%${query}%`;
-  return baseQuery()
+  const rows = await baseQuery()
     .where(
       or(
         like(schema.makes.name, pattern),
@@ -230,16 +247,17 @@ export function searchGenerations(query: string): GenerationWithDetails[] {
         like(schema.generations.category, pattern),
       )
     )
-    .all()
-    .map(rowToGenerationWithDetails);
+    .all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
-export function findGenerationBySlug(
+export async function findGenerationBySlug(
   makeSlug: string,
   modelSlug: string,
   genSlug: string
-): GenerationWithDetails | null {
-  const row = baseQuery()
+): Promise<GenerationWithDetails | null> {
+  await dbReady();
+  const row = await baseQuery()
     .where(and(
       eq(schema.makes.slug, makeSlug),
       eq(schema.models.slug, modelSlug),
@@ -253,15 +271,15 @@ export function findGenerationBySlug(
 // Browse helpers
 // =============================================
 
-export function getAllMakes(): Make[] {
-  return db.select().from(schema.makes)
-    .orderBy(schema.makes.name)
-    .all()
-    .map((row) => ({ id: row.id, name: row.name, slug: row.slug }));
+export async function getAllMakes(): Promise<Make[]> {
+  await dbReady();
+  const rows = await db.select().from(schema.makes).orderBy(schema.makes.name).all();
+  return rows.map((row) => ({ id: row.id, name: row.name, slug: row.slug }));
 }
 
-export function getAllMakesWithCounts(): MakeWithCount[] {
-  const rows = db
+export async function getAllMakesWithCounts(): Promise<MakeWithCount[]> {
+  await dbReady();
+  const rows = await db
     .select({
       makeId: schema.makes.id,
       makeName: schema.makes.name,
@@ -279,57 +297,63 @@ export function getAllMakesWithCounts(): MakeWithCount[] {
 
   return rows.map((row) => ({
     make: { id: row.makeId, name: row.makeName, slug: row.makeSlug },
-    modelCount: row.modelCount,
-    generationCount: row.generationCount,
+    modelCount: Number(row.modelCount),
+    generationCount: Number(row.generationCount),
   }));
 }
 
-export function getGenerationsByPriceRange(range: PriceRange): GenerationWithDetails[] {
+export async function getGenerationsByPriceRange(range: PriceRange): Promise<GenerationWithDetails[]> {
   const pr = priceRanges.find((r) => r.value === range);
   if (!pr) return [];
-  return baseQuery()
+  await dbReady();
+  const rows = await baseQuery()
     .where(and(
       gte(schema.generationStats.avgPrice12mo, pr.min),
       lte(schema.generationStats.avgPrice12mo, pr.max),
     ))
-    .all()
-    .map(rowToGenerationWithDetails);
+    .all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
-export function getGenerationsByEra(era: Era): GenerationWithDetails[] {
+export async function getGenerationsByEra(era: Era): Promise<GenerationWithDetails[]> {
   const e = eras.find((r) => r.value === era);
   if (!e) return [];
-  return baseQuery()
+  await dbReady();
+  const rows = await baseQuery()
     .where(and(
       gte(schema.generations.yearStart, e.yearMin),
       lte(schema.generations.yearStart, e.yearMax),
     ))
-    .all()
-    .map(rowToGenerationWithDetails);
+    .all();
+  return rows.map(rowToGenerationWithDetails);
 }
 
 // =============================================
 // Sparkline helpers
 // =============================================
 
-export function getSparklineDataForGenerations(
+/** Last 12 months of completed sale prices per generation, one query. */
+export async function getSparklineDataForGenerations(
   generationIds: string[]
-): Record<string, number[]> {
+): Promise<Record<string, number[]>> {
   const result: Record<string, number[]> = {};
-  const cutoffStr = shiftIsoDate(getDataAsOfDate(), { years: -1 });
+  for (const id of generationIds) result[id] = [];
+  if (generationIds.length === 0) return result;
 
-  for (const id of generationIds) {
-    const rows = db.select({ salePrice: schema.sales.salePrice })
-      .from(schema.sales)
-      .where(and(
-        eq(schema.sales.generationId, id),
-        gte(schema.sales.saleDate, cutoffStr),
-        eq(schema.sales.sold, true),
-      ))
-      .orderBy(schema.sales.saleDate)
-      .all();
-    result[id] = rows.map((r) => r.salePrice);
-  }
+  await dbReady();
+  const cutoffStr = shiftIsoDate(await getDataAsOfDate(), { years: -1 });
+  const rows = await db
+    .select({ generationId: schema.sales.generationId, salePrice: schema.sales.salePrice })
+    .from(schema.sales)
+    .where(and(
+      inArray(schema.sales.generationId, generationIds),
+      gte(schema.sales.saleDate, cutoffStr),
+      eq(schema.sales.sold, true),
+    ))
+    .orderBy(schema.sales.saleDate)
+    .all();
+
+  for (const r of rows) result[r.generationId]?.push(r.salePrice);
   return result;
 }
 
@@ -337,8 +361,9 @@ export function getSparklineDataForGenerations(
 // Category indices
 // =============================================
 
-export function getCategoryIndices(): CategoryIndex[] {
-  const rows = db.select().from(schema.categoryIndices).all();
+export async function getCategoryIndices(): Promise<CategoryIndex[]> {
+  await dbReady();
+  const rows = await db.select().from(schema.categoryIndices).all();
   return rows.map((row) => ({
     category: row.category,
     displayName: row.displayName,
@@ -354,11 +379,12 @@ export function getCategoryIndices(): CategoryIndex[] {
  * 12-month average, then averaged across the generations that sold that month,
  * so a month of expensive cars selling doesn't read as the category rising.
  */
-export function getCategoryMonthlySeries(): Record<string, number[]> {
-  const asOf = getDataAsOfDate();
+export async function getCategoryMonthlySeries(): Promise<Record<string, number[]>> {
+  await dbReady();
+  const asOf = await getDataAsOfDate();
   const cutoff = shiftIsoDate(asOf, { years: -1 });
 
-  const rows = db
+  const rows = await db
     .select({
       category: schema.generations.category,
       generationId: schema.sales.generationId,

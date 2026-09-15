@@ -11,8 +11,10 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const results = q ? searchGenerations(q) : [];
-  const categoryIndices = getCategoryIndices();
+  const [results, categoryIndices] = await Promise.all([
+    q ? searchGenerations(q) : Promise.resolve([]),
+    getCategoryIndices(),
+  ]);
 
   return (
     <>

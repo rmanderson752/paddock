@@ -11,7 +11,7 @@ export async function addToWatchlist(generationId: string) {
   if (!session) return { success: false, error: "Not authenticated" };
 
   try {
-    const existing = db
+    const existing = await db
       .select()
       .from(watchlistItems)
       .where(
@@ -25,7 +25,7 @@ export async function addToWatchlist(generationId: string) {
     if (existing) return { success: true };
 
     const id = crypto.randomUUID();
-    db.insert(watchlistItems)
+    await db.insert(watchlistItems)
       .values({ id, userId: session.userId, generationId })
       .run();
 
@@ -41,7 +41,7 @@ export async function removeFromWatchlist(generationId: string) {
   if (!session) return { success: false, error: "Not authenticated" };
 
   try {
-    db.delete(watchlistItems)
+    await db.delete(watchlistItems)
       .where(
         and(
           eq(watchlistItems.userId, session.userId),
@@ -62,7 +62,7 @@ export async function toggleWatchlist(generationId: string) {
   if (!session) return { success: false, watched: false, error: "Not authenticated" };
 
   try {
-    const existing = db
+    const existing = await db
       .select()
       .from(watchlistItems)
       .where(
@@ -74,14 +74,14 @@ export async function toggleWatchlist(generationId: string) {
       .get();
 
     if (existing) {
-      db.delete(watchlistItems)
+      await db.delete(watchlistItems)
         .where(eq(watchlistItems.id, existing.id))
         .run();
       revalidatePath("/watchlist");
       return { success: true, watched: false };
     } else {
       const id = crypto.randomUUID();
-      db.insert(watchlistItems)
+      await db.insert(watchlistItems)
         .values({ id, userId: session.userId, generationId })
         .run();
       revalidatePath("/watchlist");
@@ -96,7 +96,7 @@ export async function isWatching(generationId: string): Promise<boolean> {
   const session = await getSession();
   if (!session) return false;
 
-  const existing = db
+  const existing = await db
     .select()
     .from(watchlistItems)
     .where(
@@ -114,7 +114,7 @@ export async function getUserWatchlistIds(): Promise<string[]> {
   const session = await getSession();
   if (!session) return [];
 
-  const items = db
+  const items = await db
     .select({ generationId: watchlistItems.generationId })
     .from(watchlistItems)
     .where(eq(watchlistItems.userId, session.userId))

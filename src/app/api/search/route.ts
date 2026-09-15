@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] });
     }
 
-    const results = searchGenerations(q);
+    const results = await searchGenerations(q);
     return NextResponse.json({ results, query: q });
   } catch {
     return NextResponse.json({ error: "Search failed" }, { status: 500 });

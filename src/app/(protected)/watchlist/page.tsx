@@ -3,7 +3,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { WatchlistGrid } from "@/components/features/watchlist/WatchlistGrid";
 import type { Metadata } from "next";
-import { getGenerationWithDetails, getSparklineDataForGenerations } from "@/lib/data";
+import { getGenerationsWithDetailsByIds, getSparklineDataForGenerations } from "@/lib/data";
 import { getSession } from "@/lib/auth/session";
 import { getUserWatchlistIds } from "@/lib/auth/watchlist-actions";
 import { redirect } from "next/navigation";
@@ -16,10 +16,8 @@ export default async function WatchlistPage() {
 
   const watchedIds = await getUserWatchlistIds();
 
-  const cars = watchedIds
-    .map((id) => getGenerationWithDetails(id))
-    .filter((c) => c !== null);
-  const sparklineData = getSparklineDataForGenerations(cars.map((c) => c.id));
+  const cars = await getGenerationsWithDetailsByIds(watchedIds);
+  const sparklineData = await getSparklineDataForGenerations(cars.map((c) => c.id));
 
   return (
     <>

@@ -23,7 +23,7 @@ export async function generateMetadata({
   params: Promise<{ make: string; model: string; generation: string }>;
 }): Promise<Metadata> {
   const { make, model, generation } = await params;
-  const car = findGenerationBySlug(make, model, generation);
+  const car = await findGenerationBySlug(make, model, generation);
   // Metadata resolves before the response streams, so a 404 raised here gets a
   // real 404 status (inside the page it would arrive after the 200 shell).
   if (!car) notFound();
@@ -45,16 +45,18 @@ export default async function CarDetailPage({
   params: Promise<{ make: string; model: string; generation: string }>;
 }) {
   const { make, model, generation } = await params;
-  const car = findGenerationBySlug(make, model, generation);
+  const car = await findGenerationBySlug(make, model, generation);
 
   if (!car) {
     notFound();
   }
 
-  const sales = getSalesForGeneration(car.id);
+  const [sales, asOf, session] = await Promise.all([
+    getSalesForGeneration(car.id),
+    getDataAsOfDate(),
+    getSession(),
+  ]);
   const activeListings = getActiveListingsForGeneration();
-  const asOf = getDataAsOfDate();
-  const session = await getSession();
   const watched = session ? await isWatching(car.id) : false;
 
   const jsonLd = {

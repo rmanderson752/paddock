@@ -2,7 +2,7 @@ import { HeaderServer } from "@/components/layout/HeaderServer";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { CompareClient } from "@/components/features/compare/CompareClient";
-import { getGenerationWithDetails } from "@/lib/data";
+import { getGenerationsWithDetailsByIds } from "@/lib/data";
 
 export default async function ComparePage({
   searchParams,
@@ -12,10 +12,7 @@ export default async function ComparePage({
   const { ids } = await searchParams;
   const idList = ids?.split(",").filter(Boolean) ?? [];
 
-  const cars = idList
-    .slice(0, 4) // max 4 cars
-    .map((id) => getGenerationWithDetails(id))
-    .filter((c) => c !== null);
+  const cars = await getGenerationsWithDetailsByIds(idList.slice(0, 4)); // max 4 cars
 
   return (
     <>

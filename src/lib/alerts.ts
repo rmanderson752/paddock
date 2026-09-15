@@ -1,10 +1,10 @@
 // Server-only — evaluates a user's price alerts against the latest data and
 // builds the activity feed for their watchlist.
 
-import { db } from "./db";
+import { db, dbReady } from "./db";
 import * as schema from "./db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
-import { getGenerationWithDetails } from "./data";
+import { getGenerationsWithDetailsByIds } from "./data";
 import type { GenerationWithDetails } from "./types";
 import type { AlertType } from "./auth/alert-actions";
 
@@ -34,17 +34,22 @@ function isoDate(value: string): string {
   return value.slice(0, 10);
 }
 
-export function getUserAlerts(userId: string): AlertWithStatus[] {
-  const rows = db
+export async function getUserAlerts(userId: string): Promise<AlertWithStatus[]> {
+  await dbReady();
+  const rows = await db
     .select()
     .from(schema.priceAlerts)
     .where(eq(schema.priceAlerts.userId, userId))
     .orderBy(desc(schema.priceAlerts.createdAt))
     .all();
 
+  const cars = new Map(
+    (await getGenerationsWithDetailsByIds([...new Set(rows.map((r) => r.generationId))])).map((c) => [c.id, c])
+  );
+
   const result: AlertWithStatus[] = [];
   for (const row of rows) {
-    const car = getGenerationWithDetails(row.generationId);
+    const car = cars.get(row.generationId);
     if (!car) continue;
 
     const alertType = row.alertType as AlertType;
@@ -80,16 +85,18 @@ export function getUserAlerts(userId: string): AlertWithStatus[] {
 }
 
 /** Completed sales of the cars on a user's watchlist, newest first. */
-export function getWatchlistActivity(userId: string, limit = 20): WatchlistActivityItem[] {
-  const watched = db
-    .select({ generationId: schema.watchlistItems.generationId })
-    .from(schema.watchlistItems)
-    .where(eq(schema.watchlistItems.userId, userId))
-    .all()
-    .map((w) => w.generationId);
+export async function getWatchlistActivity(userId: string, limit = 20): Promise<WatchlistActivityItem[]> {
+  await dbReady();
+  const watched = (
+    await db
+      .select({ generationId: schema.watchlistItems.generationId })
+      .from(schema.watchlistItems)
+      .where(eq(schema.watchlistItems.userId, userId))
+      .all()
+  ).map((w) => w.generationId);
   if (watched.length === 0) return [];
 
-  const sales = db
+  const sales = await db
     .select({
       id: schema.sales.id,
       generationId: schema.sales.generationId,
@@ -103,16 +110,13 @@ export function getWatchlistActivity(userId: string, limit = 20): WatchlistActiv
     .limit(limit)
     .all();
 
-  const cars = new Map<string, GenerationWithDetails>();
+  const cars = new Map<string, GenerationWithDetails>(
+    (await getGenerationsWithDetailsByIds(watched)).map((c) => [c.id, c])
+  );
   const items: WatchlistActivityItem[] = [];
   for (const s of sales) {
-    let car = cars.get(s.generationId);
-    if (!car) {
-      const found = getGenerationWithDetails(s.generationId);
-      if (!found) continue;
-      cars.set(s.generationId, found);
-      car = found;
-    }
+    const car = cars.get(s.generationId);
+    if (!car) continue;
     items.push({ id: s.id, saleDate: s.saleDate, salePrice: s.salePrice, source: s.source, car });
   }
   return items;

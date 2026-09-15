@@ -10,13 +10,17 @@ import {
   getCategoryIndices,
   getAllMakesWithCounts,
   getTopMovers,
+  getAllGenerationsWithDetails,
 } from "@/lib/data";
 
-export default function BrowsePage() {
-  const categoryIndices = getCategoryIndices();
-  const makesWithCounts = getAllMakesWithCounts();
-  const gainers = getTopMovers("gainers", 5);
-  const losers = getTopMovers("losers", 5);
+export default async function BrowsePage() {
+  const [categoryIndices, makesWithCounts, gainers, losers, allGenerations] = await Promise.all([
+    getCategoryIndices(),
+    getAllMakesWithCounts(),
+    getTopMovers("gainers", 5),
+    getTopMovers("losers", 5),
+    getAllGenerationsWithDetails(),
+  ]);
 
   return (
     <>
@@ -42,13 +46,13 @@ export default function BrowsePage() {
         {/* By Price Range */}
         <section className="mb-10">
           <h2 className="text-sm font-medium text-sand mb-3">By Price Range</h2>
-          <PriceRangeGrid />
+          <PriceRangeGrid generations={allGenerations} />
         </section>
 
         {/* By Era */}
         <section className="mb-10">
           <h2 className="text-sm font-medium text-sand mb-3">By Era</h2>
-          <EraGrid />
+          <EraGrid generations={allGenerations} />
         </section>
 
         {/* Trending */}

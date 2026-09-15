@@ -8,8 +8,8 @@ const links = [
   { href: "/search", label: "Search" },
 ];
 
-export function Footer() {
-  const asOf = getDataAsOfDate();
+export async function Footer() {
+  const asOf = await getDataAsOfDate();
 
   return (
     <footer className="hidden sm:block border-t-[0.5px] border-surface-border py-8 mt-16">

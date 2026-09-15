@@ -16,15 +16,21 @@ import Link from "next/link";
 
 export const metadata: Metadata = { title: "Profile | Paddock" };
 
-function countFor(table: typeof portfolioItems | typeof watchlistItems | typeof priceAlerts, userId: string): number {
-  return db.select({ count: sql<number>`COUNT(*)` }).from(table).where(eq(table.userId, userId)).get()?.count ?? 0;
+async function countFor(table: typeof portfolioItems | typeof watchlistItems | typeof priceAlerts, userId: string): Promise<number> {
+  const row = await db.select({ count: sql<number>`COUNT(*)` }).from(table).where(eq(table.userId, userId)).get();
+  return Number(row?.count ?? 0);
 }
 
 export default async function ProfilePage() {
   const session = await getSession();
   if (!session) redirect("/login?redirect=/profile");
 
-  const user = db.select().from(users).where(eq(users.id, session.userId)).get();
+  const [user, portfolioCount, watchlistCount, alertCount] = await Promise.all([
+    db.select().from(users).where(eq(users.id, session.userId)).get(),
+    countFor(portfolioItems, session.userId),
+    countFor(watchlistItems, session.userId),
+    countFor(priceAlerts, session.userId),
+  ]);
   const name = user?.name ?? session.name;
   const memberSince = user?.createdAt ? formatDate(user.createdAt.slice(0, 10)) : null;
 
@@ -36,9 +42,9 @@ export default async function ProfilePage() {
     .slice(0, 2);
 
   const counts = [
-    { label: "Portfolio", value: countFor(portfolioItems, session.userId), href: "/portfolio" },
-    { label: "Watchlist", value: countFor(watchlistItems, session.userId), href: "/watchlist" },
-    { label: "Alerts", value: countFor(priceAlerts, session.userId), href: "/alerts" },
+    { label: "Portfolio", value: portfolioCount, href: "/portfolio" },
+    { label: "Watchlist", value: watchlistCount, href: "/watchlist" },
+    { label: "Alerts", value: alertCount, href: "/alerts" },
   ];
 
   return (

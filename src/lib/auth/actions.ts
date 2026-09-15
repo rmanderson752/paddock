@@ -55,7 +55,7 @@ export async function signup(
 
   try {
     // Check if email already exists
-    const existing = db.select().from(users).where(eq(users.email, email)).get();
+    const existing = await db.select().from(users).where(eq(users.email, email)).get();
     if (existing) {
       return { success: false, error: "An account with this email already exists" };
     }
@@ -63,7 +63,7 @@ export async function signup(
     const passwordHash = await bcrypt.hash(password, 12);
 
     const id = crypto.randomUUID();
-    db.insert(users)
+    await db.insert(users)
       .values({ id, email, name, passwordHash })
       .run();
 
@@ -100,7 +100,7 @@ export async function login(
   }
 
   try {
-    const user = db.select().from(users).where(eq(users.email, email)).get();
+    const user = await db.select().from(users).where(eq(users.email, email)).get();
     if (!user) {
       return { success: false, error: "Invalid email or password" };
     }

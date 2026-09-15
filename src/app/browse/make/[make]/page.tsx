@@ -12,11 +12,11 @@ export default async function BrowseMakePage({
   params: Promise<{ make: string }>;
 }) {
   const { make } = await params;
-  const makeData = getMakeBySlug(make);
+  const makeData = await getMakeBySlug(make);
   if (!makeData) notFound();
 
-  const cars = getGenerationsByMakeSlug(make);
-  const sparklineData = getSparklineDataForGenerations(cars.map((c) => c.id));
+  const cars = await getGenerationsByMakeSlug(make);
+  const sparklineData = await getSparklineDataForGenerations(cars.map((c) => c.id));
 
   return (
     <>

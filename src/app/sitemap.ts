@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllGenerationsWithDetails, getAllMakes, getCategoryIndices } from "@/lib/data";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://paddock.app";
   const now = new Date();
 
@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   // Car detail pages
-  const generations = getAllGenerationsWithDetails();
+  const generations = await getAllGenerationsWithDetails();
   const carPages: MetadataRoute.Sitemap = generations.map((g) => ({
     url: `${baseUrl}/car/${g.make.slug}/${g.model.slug}/${g.slug}`,
     lastModified: now,
@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Make browse pages
-  const makes = getAllMakes();
+  const makes = await getAllMakes();
   const makePages: MetadataRoute.Sitemap = makes.map((m) => ({
     url: `${baseUrl}/browse/make/${m.slug}`,
     lastModified: now,
@@ -31,7 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Category pages (only categories that have tracked models)
-  const categories = getCategoryIndices().filter((c) => c.modelCount > 0).map((c) => c.category);
+  const categories = (await getCategoryIndices()).filter((c) => c.modelCount > 0).map((c) => c.category);
   const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
     url: `${baseUrl}/browse/${c}`,
     lastModified: now,

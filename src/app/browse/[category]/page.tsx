@@ -29,8 +29,8 @@ export default async function BrowseCategoryPage({
   const { category } = await params;
   const label = categoryLabels[category];
   if (!label) notFound();
-  const cars = getGenerationsByCategory(category);
-  const sparklineData = getSparklineDataForGenerations(cars.map((c) => c.id));
+  const cars = await getGenerationsByCategory(category);
+  const sparklineData = await getSparklineDataForGenerations(cars.map((c) => c.id));
 
   return (
     <>

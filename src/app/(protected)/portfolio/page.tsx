@@ -4,7 +4,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { PortfolioClient } from "@/components/features/portfolio/PortfolioClient";
 import { type PortfolioItem } from "@/components/features/portfolio/PortfolioTable";
-import { getGenerationWithDetails } from "@/lib/data";
+import { getGenerationsWithDetailsByIds } from "@/lib/data";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -18,15 +18,18 @@ export default async function PortfolioPage() {
   if (!session) redirect("/login?redirect=/portfolio");
 
   // Fetch user's portfolio from DB
-  const dbItems = db
+  const dbItems = await db
     .select()
     .from(portfolioItems)
     .where(eq(portfolioItems.userId, session.userId))
     .all();
+  const cars = new Map(
+    (await getGenerationsWithDetailsByIds([...new Set(dbItems.map((r) => r.generationId))])).map((c) => [c.id, c])
+  );
 
   const items: PortfolioItem[] = dbItems
     .map((row) => {
-      const car = getGenerationWithDetails(row.generationId);
+      const car = cars.get(row.generationId);
       if (!car) return null;
       return {
         id: row.id,

@@ -9,7 +9,8 @@
  * Rate limiting: 2.5 second delay between requests.
  */
 
-import { sqlite } from "../db";
+import { client, batchWrite, dbReady } from "../db";
+import type { InStatement } from "@libsql/client";
 
 // ─── Config ──────────────────────────────────────────────────────────
 const DELAY_MS = 2500;
@@ -290,33 +291,27 @@ async function scrapeBaTModelPage(config: CarConfig, log: Logger): Promise<Scrap
 }
 
 // ─── Database ────────────────────────────────────────────────────────
-function resolveGenerationIds(): Map<string, string> {
+async function resolveGenerationIds(): Promise<Map<string, string>> {
   // Map config generationName → DB UUID
-  const rows = sqlite.prepare("SELECT id, name FROM generations").all() as { id: string; name: string }[];
-  return new Map(rows.map((r) => [r.name, r.id]));
+  await dbReady();
+  const res = await client.execute("SELECT id, name FROM generations");
+  return new Map(res.rows.map((r) => [String(r.name), String(r.id)]));
 }
 
-function saveSales(generationId: string, sales: ScrapedSale[]): number {
-  const insert = sqlite.prepare(`
-    INSERT OR IGNORE INTO sales (id, generation_id, sale_price, sale_date, source, source_url, year, mileage, color, condition_notes, is_no_reserve, sold, created_at, updated_at)
-    VALUES (?, ?, ?, ?, 'bat', ?, ?, ?, NULL, ?, ?, ?, datetime('now'), datetime('now'))
-  `);
+async function saveSales(generationId: string, sales: ScrapedSale[]): Promise<number> {
+  const existing = await client.execute({
+    sql: "SELECT source_url FROM sales WHERE generation_id = ? AND source = 'bat'",
+    args: [generationId],
+  });
+  const existingUrls = new Set(existing.rows.map((r) => r.source_url).filter(Boolean) as string[]);
 
-  const existingUrls = new Set(
-    (
-      sqlite
-        .prepare("SELECT source_url FROM sales WHERE generation_id = ? AND source = 'bat'")
-        .all(generationId) as { source_url: string | null }[]
-    )
-      .map((r) => r.source_url)
-      .filter(Boolean)
-  );
-
-  let inserted = 0;
-  const run = sqlite.transaction(() => {
-    for (const sale of sales) {
-      if (sale.sourceUrl && existingUrls.has(sale.sourceUrl)) continue;
-      insert.run(
+  const statements: InStatement[] = [];
+  for (const sale of sales) {
+    if (sale.sourceUrl && existingUrls.has(sale.sourceUrl)) continue;
+    statements.push({
+      sql: `INSERT OR IGNORE INTO sales (id, generation_id, sale_price, sale_date, source, source_url, year, mileage, color, condition_notes, is_no_reserve, sold, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'bat', ?, ?, ?, NULL, ?, ?, ?, datetime('now'), datetime('now'))`,
+      args: [
         crypto.randomUUID(),
         generationId,
         sale.salePrice,
@@ -326,13 +321,12 @@ function saveSales(generationId: string, sales: ScrapedSale[]): number {
         sale.mileage,
         sale.conditionNotes,
         sale.noReserve ? 1 : 0,
-        sale.sold ? 1 : 0
-      );
-      inserted++;
-    }
-  });
-  run();
-  return inserted;
+        sale.sold ? 1 : 0,
+      ],
+    });
+  }
+  await batchWrite(statements);
+  return statements.length;
 }
 
 function matchesConfig(sale: ScrapedSale, config: CarConfig): boolean {
@@ -395,7 +389,7 @@ export async function scrapeBaT(options: ScrapeOptions = {}): Promise<ScrapeSumm
   const configs = filterConfigs(carFilter);
   if (configs.length === 0) throw new Error(`No cars matching "${carFilter}"`);
 
-  const genNameToId = dryRun ? null : resolveGenerationIds();
+  const genNameToId = dryRun ? null : await resolveGenerationIds();
   const scrapedPages = new Map<string, ScrapedSale[]>();
   const summary: ScrapeSummary = { dryRun, pagesFetched: 0, totalMatched: 0, totalInserted: 0, cars: [] };
 
@@ -428,7 +422,7 @@ export async function scrapeBaT(options: ScrapeOptions = {}): Promise<ScrapeSumm
         result.skipped = `generation "${config.generationName}" not found in DB`;
         log(`  SKIP — ${result.skipped}`);
       } else {
-        result.inserted = saveSales(dbGenId, filtered);
+        result.inserted = await saveSales(dbGenId, filtered);
         summary.totalInserted += result.inserted;
         log(`  Inserted: ${result.inserted} new records`);
       }

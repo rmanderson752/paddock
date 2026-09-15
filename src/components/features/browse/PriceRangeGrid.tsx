@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { getAllGenerationsWithDetails } from "@/lib/data";
 import { priceRanges } from "@/lib/types";
+import type { GenerationWithDetails } from "@/lib/types";
 
-export function PriceRangeGrid() {
-  const all = getAllGenerationsWithDetails();
+interface PriceRangeGridProps {
+  generations: GenerationWithDetails[];
+}
+
+export function PriceRangeGrid({ generations: all }: PriceRangeGridProps) {
 
   const ranges = priceRanges.map((pr) => {
     const count = all.filter(

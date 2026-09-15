@@ -15,8 +15,10 @@ export default async function AlertsPage() {
   const session = await getSession();
   if (!session) redirect("/login?redirect=/alerts");
 
-  const alerts = getUserAlerts(session.userId);
-  const activity = getWatchlistActivity(session.userId, 20);
+  const [alerts, activity] = await Promise.all([
+    getUserAlerts(session.userId),
+    getWatchlistActivity(session.userId, 20),
+  ]);
   const triggered = alerts.filter((a) => a.triggered).length;
 
   return (

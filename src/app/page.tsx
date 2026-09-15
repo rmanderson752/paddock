@@ -16,13 +16,15 @@ import {
 } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 
-export default function HomePage() {
-  const gainers = getTopMovers("gainers", 6);
-  const losers = getTopMovers("losers", 6);
-  const recentSales = getRecentSales(10);
-  const categoryIndices = getCategoryIndices();
-  const categorySeries = getCategoryMonthlySeries();
-  const asOf = getDataAsOfDate();
+export default async function HomePage() {
+  const [gainers, losers, recentSales, categoryIndices, categorySeries, asOf] = await Promise.all([
+    getTopMovers("gainers", 6),
+    getTopMovers("losers", 6),
+    getRecentSales(10),
+    getCategoryIndices(),
+    getCategoryMonthlySeries(),
+    getDataAsOfDate(),
+  ]);
 
   return (
     <>

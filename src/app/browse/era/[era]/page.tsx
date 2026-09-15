@@ -16,8 +16,8 @@ export default async function BrowseEraPage({
   const eraData = eras.find((e) => e.value === era);
   if (!eraData) notFound();
 
-  const cars = getGenerationsByEra(era as Era);
-  const sparklineData = getSparklineDataForGenerations(cars.map((c) => c.id));
+  const cars = await getGenerationsByEra(era as Era);
+  const sparklineData = await getSparklineDataForGenerations(cars.map((c) => c.id));
 
   return (
     <>

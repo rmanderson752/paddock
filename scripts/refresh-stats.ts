@@ -7,7 +7,13 @@
 
 import { refreshAllStats } from "../src/lib/stats";
 
-const summary = refreshAllStats();
-console.log(`Data as of ${summary.asOf}`);
-console.log(`Generations updated: ${summary.generationsUpdated} (${summary.generationsCleared} without completed sales)`);
-console.log(`Category indices: ${summary.categories}`);
+refreshAllStats()
+  .then((summary) => {
+    console.log(`Data as of ${summary.asOf}`);
+    console.log(`Generations updated: ${summary.generationsUpdated} (${summary.generationsCleared} without completed sales)`);
+    console.log(`Category indices: ${summary.categories}`);
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

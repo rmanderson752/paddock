@@ -25,51 +25,63 @@ export const metadata: Metadata = { title: "Admin | Paddock" };
 export default async function AdminPage() {
   const session = await getSession();
   if (!session) redirect("/login?redirect=/admin");
-  if (!isAdmin(session)) redirect("/");
+  if (!(await isAdmin(session))) redirect("/");
 
-  const asOf = getDataAsOfDate();
-  const refreshRuns = getRecentRefreshRuns(8);
+  const [asOf, refreshRuns, counts, zeroSalesGens, recentSales] = await Promise.all([
+    getDataAsOfDate(),
+    getRecentRefreshRuns(8),
+    // One round trip for every headline count
+    db
+      .select({
+        makes: sql<number>`(SELECT COUNT(*) FROM makes)`,
+        models: sql<number>`(SELECT COUNT(*) FROM models)`,
+        generations: sql<number>`(SELECT COUNT(*) FROM generations)`,
+        sales: sql<number>`(SELECT COUNT(*) FROM sales)`,
+        unsold: sql<number>`(SELECT COUNT(*) FROM sales WHERE sold = 0)`,
+        users: sql<number>`(SELECT COUNT(*) FROM users)`,
+        watchlist: sql<number>`(SELECT COUNT(*) FROM watchlist_items)`,
+        portfolio: sql<number>`(SELECT COUNT(*) FROM portfolio_items)`,
+        alerts: sql<number>`(SELECT COUNT(*) FROM price_alerts)`,
+      })
+      .from(sql`(SELECT 1) AS one`)
+      .get(),
+    // Generations with zero sales
+    db
+      .select({ name: schema.generations.name, id: schema.generations.id })
+      .from(schema.generations)
+      .leftJoin(schema.sales, sql`${schema.sales.generationId} = ${schema.generations.id}`)
+      .groupBy(schema.generations.id)
+      .having(sql`COUNT(${schema.sales.id}) = 0`)
+      .all(),
+    // Latest sales
+    db
+      .select({
+        saleDate: schema.sales.saleDate,
+        salePrice: schema.sales.salePrice,
+        source: schema.sales.source,
+        genName: schema.generations.name,
+      })
+      .from(schema.sales)
+      .innerJoin(schema.generations, sql`${schema.generations.id} = ${schema.sales.generationId}`)
+      .orderBy(sql`${schema.sales.saleDate} DESC`)
+      .limit(5)
+      .all(),
+  ]);
+  const n = (v: number | undefined) => Number(v ?? 0);
+  const makeCount = n(counts?.makes);
+  const modelCount = n(counts?.models);
+  const genCount = n(counts?.generations);
+  const saleCount = n(counts?.sales);
+  const unsoldCount = n(counts?.unsold);
+  const userCount = n(counts?.users);
+  const watchlistCount = n(counts?.watchlist);
+  const portfolioCount = n(counts?.portfolio);
+  const alertCount = n(counts?.alerts);
+
   const scheduleSpec = process.env.REFRESH_SCHEDULE || DEFAULT_SCHEDULE;
   const schedule = parseSchedule(scheduleSpec);
   const inAppSchedulerOn = process.env.REFRESH_SCHEDULE_ENABLED === "true";
   const nextRun = nextRunAt(schedule);
-
-  // Gather stats
-  const genCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.generations).get()!.count;
-  const makeCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.makes).get()!.count;
-  const modelCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.models).get()!.count;
-  const saleCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.sales).get()!.count;
-  const userCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.users).get()!.count;
-  const watchlistCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.watchlistItems).get()!.count;
-  const portfolioCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.portfolioItems).get()!.count;
-  const alertCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.priceAlerts).get()!.count;
-  const unsoldCount = db.select({ count: sql<number>`COUNT(*)` }).from(schema.sales).where(sql`${schema.sales.sold} = 0`).get()!.count;
-
-  // Generations with zero sales
-  const zeroSalesGens = db
-    .select({
-      name: schema.generations.name,
-      id: schema.generations.id,
-    })
-    .from(schema.generations)
-    .leftJoin(schema.sales, sql`${schema.sales.generationId} = ${schema.generations.id}`)
-    .groupBy(schema.generations.id)
-    .having(sql`COUNT(${schema.sales.id}) = 0`)
-    .all();
-
-  // Recent sales (last 5)
-  const recentSales = db
-    .select({
-      saleDate: schema.sales.saleDate,
-      salePrice: schema.sales.salePrice,
-      source: schema.sales.source,
-      genName: schema.generations.name,
-    })
-    .from(schema.sales)
-    .innerJoin(schema.generations, sql`${schema.generations.id} = ${schema.sales.generationId}`)
-    .orderBy(sql`${schema.sales.saleDate} DESC`)
-    .limit(5)
-    .all();
 
   return (
     <>

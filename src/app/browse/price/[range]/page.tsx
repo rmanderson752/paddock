@@ -16,8 +16,8 @@ export default async function BrowsePricePage({
   const priceRange = priceRanges.find((r) => r.value === range);
   if (!priceRange) notFound();
 
-  const cars = getGenerationsByPriceRange(range as PriceRange);
-  const sparklineData = getSparklineDataForGenerations(cars.map((c) => c.id));
+  const cars = await getGenerationsByPriceRange(range as PriceRange);
+  const sparklineData = await getSparklineDataForGenerations(cars.map((c) => c.id));
 
   return (
     <>

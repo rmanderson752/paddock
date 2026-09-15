@@ -5,7 +5,7 @@ import { refreshDatabase, isRefreshRunning } from "@/lib/refresh";
 import { revalidatePath } from "next/cache";
 
 // Scraping ~30 model pages at 2.5s each takes a couple of minutes
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 export async function POST() {
   try {
@@ -13,7 +13,7 @@ export async function POST() {
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    if (!isAdmin(session)) {
+    if (!(await isAdmin(session))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

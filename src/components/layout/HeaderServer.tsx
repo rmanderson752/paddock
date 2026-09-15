@@ -8,7 +8,7 @@ export async function HeaderServer() {
     <Header
       user={
         session
-          ? { name: session.name, email: session.email, isAdmin: isAdmin(session) }
+          ? { name: session.name, email: session.email, isAdmin: await isAdmin(session) }
           : null
       }
     />

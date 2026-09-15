@@ -44,7 +44,7 @@ export async function addPortfolioCar(
 
   try {
     const id = crypto.randomUUID();
-    db.insert(portfolioItems)
+    await db.insert(portfolioItems)
       .values({
         id,
         userId: session.userId,
@@ -70,7 +70,7 @@ export async function removePortfolioCar(
   if (!session) return { success: false, error: "Not authenticated" };
 
   try {
-    db.delete(portfolioItems)
+    await db.delete(portfolioItems)
       .where(
         and(
           eq(portfolioItems.id, portfolioItemId),

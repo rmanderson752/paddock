@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { getGenerationWithDetails } from "@/lib/data";
+import { getGenerationsWithDetailsByIds } from "@/lib/data";
 import { db } from "@/lib/db";
 import { portfolioItems } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -12,15 +12,18 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const dbItems = db
+    const dbItems = await db
       .select()
       .from(portfolioItems)
       .where(eq(portfolioItems.userId, session.userId))
       .all();
+    const cars = new Map(
+      (await getGenerationsWithDetailsByIds([...new Set(dbItems.map((r) => r.generationId))])).map((c) => [c.id, c])
+    );
 
     const rows = dbItems
       .map((row) => {
-        const car = getGenerationWithDetails(row.generationId);
+        const car = cars.get(row.generationId);
         if (!car) return null;
         const currentValue = car.stats.avgPrice12mo / 100;
         const purchasePrice = row.purchasePrice / 100;

@@ -1,35 +1,41 @@
 /**
- * Seed script — creates the SQLite database with schema and reference data.
- * Does NOT create fake sales — use scrape-bat.ts for real data.
+ * Seed script — creates the schema and reference data (makes, models,
+ * generations, empty category indices). Does NOT create sales — run
+ * `npm run db:refresh` (or db:scrape) afterwards for real auction data.
+ *
+ * Works against the local SQLite file (default) or Turso when
+ * TURSO_DATABASE_URL is set. It DROPS every table first; a remote database
+ * requires --force so it can't be wiped by accident.
  *
  * Usage:
- *   npx tsx scripts/seed.ts
+ *   npm run db:seed
+ *   npm run db:seed -- --force     # required for a remote (Turso) database
  */
 
-import Database from "better-sqlite3";
 import * as fs from "fs";
 import * as path from "path";
+import { client, isLocalFile, dbReady } from "../src/lib/db";
+import type { InStatement } from "@libsql/client";
 
-// Ensure data directory exists
-const dataDir = path.resolve("data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+const force = process.argv.includes("--force");
+if (!isLocalFile && !force) {
+  console.error("Refusing to reseed a remote database without --force (this drops every table).");
+  process.exit(1);
 }
 
-const dbPath = path.resolve("data/paddock.db");
-
-// Delete existing DB for a clean seed
-if (fs.existsSync(dbPath)) {
-  fs.unlinkSync(dbPath);
-  console.log("Deleted existing database");
+if (isLocalFile) {
+  const dataDir = path.resolve("data");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const sqlite = new Database(dbPath);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+const uuid = () => crypto.randomUUID();
 
-// Create tables
-sqlite.exec(`
+const TABLES = [
+  "generations_fts", "refresh_runs", "price_alerts", "portfolio_items", "watchlist_items",
+  "users", "category_indices", "generation_stats", "sales", "generations", "models", "makes",
+];
+
+const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS makes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -167,17 +173,24 @@ sqlite.exec(`
     message TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_refresh_runs_started ON refresh_runs(started_at);
-`);
 
-console.log("Tables created");
+  CREATE TABLE IF NOT EXISTS refresh_runs (
+    id TEXT PRIMARY KEY,
+    trigger TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    status TEXT NOT NULL,
+    sales_inserted INTEGER,
+    pages_fetched INTEGER,
+    message TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_refresh_runs_started ON refresh_runs(started_at);
+`;
 
 // =============================================
-// Seed reference data
+// Reference data
 // =============================================
 
-const uuid = () => crypto.randomUUID();
-
-// Makes
 const makesData = [
   { id: uuid(), name: "Nissan", slug: "nissan" },
   { id: uuid(), name: "Toyota", slug: "toyota" },
@@ -198,13 +211,6 @@ const makesData = [
 
 const makeLookup = Object.fromEntries(makesData.map((m) => [m.slug, m.id]));
 
-const insertMake = sqlite.prepare("INSERT INTO makes (id, name, slug) VALUES (?, ?, ?)");
-for (const make of makesData) {
-  insertMake.run(make.id, make.name, make.slug);
-}
-console.log(`Inserted ${makesData.length} makes`);
-
-// Models
 const modelsData = [
   { id: uuid(), makeSlug: "nissan", name: "Skyline GT-R", slug: "skyline-gt-r" },
   { id: uuid(), makeSlug: "toyota", name: "Supra", slug: "supra" },
@@ -233,12 +239,6 @@ const modelsData = [
 ];
 
 const modelLookup = Object.fromEntries(modelsData.map((m) => [m.slug, m.id]));
-
-const insertModel = sqlite.prepare("INSERT INTO models (id, make_id, name, slug) VALUES (?, ?, ?, ?)");
-for (const model of modelsData) {
-  insertModel.run(model.id, makeLookup[model.makeSlug], model.name, model.slug);
-}
-console.log(`Inserted ${modelsData.length} models`);
 
 // Generations — all 34
 interface GenSeed {
@@ -298,22 +298,9 @@ const genSeeds: GenSeed[] = [
   { modelSlug: "911-gt3-rs", name: "992 GT3 RS", slug: "992-gt3-rs", yearStart: 2023, yearEnd: null, chassisCode: "992", category: "modern_collectible", description: "Active aero. 518hp 4.0L flat-six. DRS wing." },
 ];
 
-const insertGen = sqlite.prepare(
-  "INSERT INTO generations (id, model_id, name, slug, year_start, year_end, chassis_code, category, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-);
-
-for (const gen of genSeeds) {
-  const modelId = modelLookup[gen.modelSlug];
-  if (!modelId) {
-    console.error(`Model not found for slug: ${gen.modelSlug}`);
-    continue;
-  }
-  insertGen.run(uuid(), modelId, gen.name, gen.slug, gen.yearStart, gen.yearEnd, gen.chassisCode, gen.category, gen.description);
-}
-console.log(`Inserted ${genSeeds.length} generations`);
 
 // Category indices — created empty here and computed from real sales by
-// `npm run db:stats` (also run automatically by the scrapers).
+// `npm run db:stats` (also run automatically by the refresh job).
 const indices = [
   { category: "jdm", displayName: "JDM Icons" },
   { category: "supercar", displayName: "Supercars" },
@@ -322,17 +309,56 @@ const indices = [
   { category: "modern_collectible", displayName: "Modern Collectibles" },
 ];
 
-const insertIndex = sqlite.prepare(
-  "INSERT INTO category_indices (id, category, display_name, index_value, change_quarterly, model_count) VALUES (?, ?, ?, 0, 0, 0)"
-);
-for (const idx of indices) {
-  insertIndex.run(uuid(), idx.category, idx.displayName);
+
+async function main() {
+  await dbReady();
+
+  // Drop everything, in dependency order
+  for (const table of TABLES) {
+    await client.execute(`DROP TABLE IF EXISTS ${table}`);
+  }
+  console.log("Dropped existing tables");
+
+  await client.executeMultiple(SCHEMA_SQL);
+  console.log("Tables created");
+
+  const statements: InStatement[] = [];
+  for (const make of makesData) {
+    statements.push({ sql: "INSERT INTO makes (id, name, slug) VALUES (?, ?, ?)", args: [make.id, make.name, make.slug] });
+  }
+  for (const model of modelsData) {
+    statements.push({
+      sql: "INSERT INTO models (id, make_id, name, slug) VALUES (?, ?, ?, ?)",
+      args: [model.id, makeLookup[model.makeSlug], model.name, model.slug],
+    });
+  }
+  let genCount = 0;
+  for (const gen of genSeeds) {
+    const modelId = modelLookup[gen.modelSlug];
+    if (!modelId) {
+      console.error(`Model not found for slug: ${gen.modelSlug}`);
+      continue;
+    }
+    statements.push({
+      sql: "INSERT INTO generations (id, model_id, name, slug, year_start, year_end, chassis_code, category, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      args: [uuid(), modelId, gen.name, gen.slug, gen.yearStart, gen.yearEnd, gen.chassisCode, gen.category, gen.description],
+    });
+    genCount++;
+  }
+  for (const idx of indices) {
+    statements.push({
+      sql: "INSERT INTO category_indices (id, category, display_name, index_value, change_quarterly, model_count) VALUES (?, ?, ?, 0, 0, 0)",
+      args: [uuid(), idx.category, idx.displayName],
+    });
+  }
+  await client.batch(statements, "write");
+
+  console.log(`Inserted ${makesData.length} makes, ${modelsData.length} models, ${genCount} generations, ${indices.length} category indices`);
+  console.log(`\nSeed complete (${isLocalFile ? "local file" : "remote database"}).`);
+  console.log("Next: run 'npm run db:refresh' to pull real auction data and compute stats.");
 }
-console.log(`Inserted ${indices.length} category indices (values computed by db:stats)`);
 
-// No fake sales — use scripts/scrape-bat.ts for real data
-console.log("\nSeed complete! Database at: data/paddock.db");
-console.log("Next: run 'npx tsx scripts/scrape-bat.ts' to populate with real auction data,");
-console.log("then 'npm run db:stats' to compute stats and category indices.");
-
-sqlite.close();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

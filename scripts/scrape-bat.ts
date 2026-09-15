@@ -40,8 +40,8 @@ async function main() {
   console.log(`Total matched: ${summary.totalMatched}`);
   if (!dryRun) {
     console.log(`Total inserted: ${summary.totalInserted}`);
-    const stats = refreshAllStats();
-    rebuildFtsIndex();
+    const stats = await refreshAllStats();
+    await rebuildFtsIndex();
     console.log(`Stats refreshed as of ${stats.asOf}: ${stats.generationsUpdated} generations, ${stats.categories} categories`);
   }
   console.log("Done!");

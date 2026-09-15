@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { getAllGenerationsWithDetails } from "@/lib/data";
 import { eras } from "@/lib/types";
+import type { GenerationWithDetails } from "@/lib/types";
 
-export function EraGrid() {
-  const all = getAllGenerationsWithDetails();
+interface EraGridProps {
+  generations: GenerationWithDetails[];
+}
+
+export function EraGrid({ generations: all }: EraGridProps) {
 
   const eraCards = eras.map((era) => {
     const count = all.filter(

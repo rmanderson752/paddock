@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { SessionPayload } from "./session";
 
-export function isAdmin(session: SessionPayload | null): boolean {
+export async function isAdmin(session: SessionPayload | null): Promise<boolean> {
   if (!session) return false;
 
   const configured = (process.env.ADMIN_EMAILS ?? "")
@@ -18,7 +18,7 @@ export function isAdmin(session: SessionPayload | null): boolean {
     return configured.includes(session.email.toLowerCase());
   }
 
-  const firstUser = db
+  const firstUser = await db
     .select({ id: users.id })
     .from(users)
     .orderBy(users.createdAt)
