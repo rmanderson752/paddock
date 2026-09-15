@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { getAllGenerationsWithDetails, getAllMakes, getCategoryIndices } from "@/lib/data";
 
+// Built from the database on request, never at build time
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://paddock.app";
   const now = new Date();
