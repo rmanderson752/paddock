@@ -162,7 +162,9 @@ export function gradeSummary(summary: string, input: ExtractionInput): SummaryGr
     withinLength: text.length <= SUMMARY_MAX_CHARS,
     sentenceCount: sentences.length,
     atMostTwoSentences: sentences.length <= 2,
-    noPrice: !/\$|\busd\b|\bbid\b|\bsold for\b/i.test(text),
+    // A service invoice ("$15k rebuild") is fine; the sale price or bidding is not
+    noPrice: !/\b(sold for|bid to|winning bid|high bid|hammer|sale price|asking price|reserve)\b/i.test(text) &&
+      !/(sold|bid|price)[^.]{0,30}\$\s?\d|\$\s?\d[^.]{0,30}\b(sold|bid|price)\b/i.test(text),
     numbersGrounded: ungrounded.length === 0,
     ungroundedNumbers: ungrounded,
   };

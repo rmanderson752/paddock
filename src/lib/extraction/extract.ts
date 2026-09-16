@@ -10,7 +10,8 @@ import { SYSTEM_PROMPT, buildUserMessage, extractionInputHash } from "./prompt";
 import { estimateCostUsd, type TokenUsage } from "./pricing";
 
 export const DEFAULT_MODEL = "claude-opus-5";
-const MAX_TOKENS = 4096;
+// Adaptive thinking counts against max_tokens; the JSON itself is a few hundred
+const MAX_TOKENS = 16000;
 
 export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 

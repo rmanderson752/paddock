@@ -95,6 +95,12 @@ describe("gradeSummary", () => {
   it("treats 115k and 115,000 as the same number", () => {
     expect(gradeSummary("Shows 115,000 miles.", input).numbersGrounded).toBe(true);
   });
+  it("allows a service cost but not the sale price", () => {
+    const priced = { ...input, description: `${input.description} A $15k engine rebuild was completed in 2020.` };
+    expect(gradeSummary("A $15k engine rebuild was completed in 2020.", priced).noPrice).toBe(true);
+    expect(gradeSummary("The car sold for $120,000 in 2020.", priced).noPrice).toBe(false);
+    expect(gradeSummary("Bid to $95,000 previously.", priced).noPrice).toBe(false);
+  });
 });
 
 describe("aggregate", () => {
