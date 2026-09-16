@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { AlertList } from "@/components/features/alerts/AlertList";
@@ -24,28 +26,28 @@ export default async function AlertsPage() {
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
-        <h1 className="font-serif text-2xl mb-1">Alerts</h1>
-        <p className="text-sm text-sand-muted mb-6">
-          {alerts.length === 0
-            ? "Watch for a sale or a target price on any car."
-            : `${alerts.length} alert${alerts.length !== 1 ? "s" : ""}${
-                triggered ? ` · ${triggered} condition${triggered !== 1 ? "s" : ""} met` : ""
-              }`}
-        </p>
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        <PageTitle
+          eyebrow="Your collection"
+          title="Alerts"
+          description={
+            alerts.length === 0
+              ? "Watch for a sale or a target price on any car."
+              : `${alerts.length} alert${alerts.length !== 1 ? "s" : ""}${
+                  triggered ? ` · ${triggered} condition${triggered !== 1 ? "s" : ""} met` : ""
+                }`
+          }
+        />
 
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-sand mb-3">Your alerts</h2>
+        <section className="pt-12">
+          <SectionTitle>Your alerts</SectionTitle>
           <AlertList alerts={alerts} />
         </section>
 
-        <section>
-          <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-sm font-medium text-sand">Watchlist activity</h2>
-            <Link href="/watchlist" className="text-[12px] text-sand-subtle hover:text-sand transition-colors">
-              Manage watchlist →
-            </Link>
-          </div>
+        <section className="pt-16">
+          <SectionTitle aside={<Link href="/watchlist" className="hover:text-sand transition-colors">Manage watchlist →</Link>}>
+            Watchlist activity
+          </SectionTitle>
           <AlertsFeed items={activity} />
         </section>
       </main>

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/utils";
 import type { GenerationWithDetails } from "@/lib/types";
 import { removePortfolioCar } from "@/lib/auth/portfolio-actions";
@@ -31,26 +30,25 @@ export function PortfolioTable({ items }: PortfolioTableProps) {
 
   if (items.length === 0) {
     return (
-      <Card>
-        <p className="text-sm text-sand-subtle text-center py-6">
-          No cars in your portfolio yet. Add your first car to start tracking its value.
-        </p>
-      </Card>
+      <div className="border-y border-surface-border py-12 text-center">
+        <p className="display-serif text-[20px] italic text-sand-muted">Nothing in the portfolio yet.</p>
+        <p className="mt-3 text-[13px] text-sand-subtle">Add your first car to follow its value against what you paid.</p>
+      </div>
     );
   }
 
   return (
     <>
       {/* Desktop table */}
-      <Card className="overflow-hidden hidden sm:block">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 px-0 py-2.5 text-[11px] uppercase tracking-[0.5px] text-sand-faint border-b border-surface-border">
+      <div className="hidden sm:block">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 py-2.5 label-caps text-sand-subtle border-b border-surface-border">
           <div>Vehicle</div>
           <div className="text-right">Paid</div>
-          <div className="text-right">Current</div>
-          <div className="text-right">Gain/Loss</div>
+          <div className="text-right">Market</div>
+          <div className="text-right">Unrealised</div>
           <div className="w-8" />
         </div>
-        <div className="divide-y divide-surface-border">
+        <div className="divide-y divide-surface-border border-b border-surface-border">
           {items.map((item) => {
             const currentPrice = item.car.stats.avgPrice12mo;
             const gain = currentPrice - item.purchasePrice;
@@ -59,35 +57,37 @@ export function PortfolioTable({ items }: PortfolioTableProps) {
             return (
               <div
                 key={item.id}
-                className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 py-3 -mx-4 px-4 sm:-mx-5 sm:px-5 items-center text-[13px] group"
+                className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 py-4 items-center group"
               >
                 <Link
                   href={`/car/${item.car.make.slug}/${item.car.model.slug}/${item.car.slug}`}
-                  className="hover:text-forest-light transition-colors"
+                  className="min-w-0"
                 >
-                  <span className="font-medium text-sand">{item.car.name}</span>
-                  {item.year && (
-                    <span className="text-sand-subtle ml-1.5">{item.year}</span>
-                  )}
+                  <div className="label-caps text-sand-subtle">
+                    {item.car.make.name}{item.year ? ` · ${item.year}` : ""}
+                  </div>
+                  <div className="display-serif text-[20px] text-sand truncate mt-0.5 group-hover:underline decoration-[0.5px] underline-offset-4">
+                    {item.car.name}
+                  </div>
                   {item.notes && (
-                    <div className="text-[11px] text-sand-faint truncate max-w-[200px]">
+                    <div className="text-[11px] text-sand-faint truncate max-w-[260px] mt-1">
                       {item.notes}
                     </div>
                   )}
                 </Link>
-                <div className="text-right text-sand-muted">
+                <div className="text-right numerals text-[14px] text-sand-muted">
                   {formatPrice(item.purchasePrice)}
                 </div>
-                <div className="text-right text-sand-muted">
+                <div className="text-right display-serif numerals text-[18px] text-sand">
                   {formatPrice(currentPrice)}
                 </div>
                 <div
-                  className={`text-right font-medium ${
-                    isPositive ? "text-forest-light" : "text-maroon-light"
+                  className={`text-right numerals text-[14px] font-medium ${
+                    isPositive ? "text-forest" : "text-maroon-light"
                   }`}
                 >
-                  {isPositive ? "+" : ""}
-                  {formatPrice(gain)}
+                  {isPositive ? "+" : "−"}
+                  {formatPrice(Math.abs(gain))}
                 </div>
                 <button
                   onClick={() => handleRemove(item.id)}
@@ -107,10 +107,10 @@ export function PortfolioTable({ items }: PortfolioTableProps) {
             );
           })}
         </div>
-      </Card>
+      </div>
 
       {/* Mobile cards */}
-      <div className="space-y-3 sm:hidden">
+      <div className="divide-y divide-surface-border border-y border-surface-border sm:hidden">
         {items.map((item) => {
           const currentPrice = item.car.stats.avgPrice12mo;
           const gain = currentPrice - item.purchasePrice;
@@ -120,19 +120,16 @@ export function PortfolioTable({ items }: PortfolioTableProps) {
             : "0";
 
           return (
-            <Card key={item.id}>
+            <div key={item.id} className="py-4">
               <div className="flex items-start justify-between">
                 <Link
                   href={`/car/${item.car.make.slug}/${item.car.model.slug}/${item.car.slug}`}
                   className="hover:text-forest-light transition-colors flex-1"
                 >
-                  <div className="text-[11px] text-sand-faint">{item.car.make.name}</div>
-                  <div className="font-medium text-sand">
-                    {item.car.name}
-                    {item.year && (
-                      <span className="text-sand-subtle ml-1.5 font-normal">{item.year}</span>
-                    )}
+                  <div className="label-caps text-sand-subtle">
+                    {item.car.make.name}{item.year ? ` · ${item.year}` : ""}
                   </div>
+                  <div className="display-serif text-[20px] text-sand mt-0.5">{item.car.name}</div>
                 </Link>
                 <button
                   onClick={() => handleRemove(item.id)}
@@ -149,15 +146,13 @@ export function PortfolioTable({ items }: PortfolioTableProps) {
                   )}
                 </button>
               </div>
-              <div className="flex items-baseline justify-between mt-2 text-[13px]">
-                <div className="text-sand-muted">
-                  Paid {formatPrice(item.purchasePrice)}
-                </div>
+              <div className="flex items-baseline justify-between mt-3">
+                <div className="label-caps text-sand-subtle numerals">Paid {formatPrice(item.purchasePrice)}</div>
                 <div className="text-right">
-                  <span className="text-sand">{formatPrice(currentPrice)}</span>
+                  <span className="display-serif numerals text-[18px] text-sand">{formatPrice(currentPrice)}</span>
                   <span
-                    className={`ml-2 text-[12px] font-medium ${
-                      isPositive ? "text-forest-light" : "text-maroon-light"
+                    className={`ml-2 text-[12px] numerals font-medium ${
+                      isPositive ? "text-forest" : "text-maroon-light"
                     }`}
                   >
                     {isPositive ? "+" : ""}{pct}%
@@ -165,11 +160,11 @@ export function PortfolioTable({ items }: PortfolioTableProps) {
                 </div>
               </div>
               {item.notes && (
-                <div className="text-[11px] text-sand-faint mt-1 truncate">
+                <div className="text-[11px] text-sand-faint mt-1.5 truncate">
                   {item.notes}
                 </div>
               )}
-            </Card>
+            </div>
           );
         })}
       </div>

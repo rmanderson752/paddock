@@ -9,15 +9,16 @@ interface NavPillProps {
   className?: string;
 }
 
+// Tracked-capital tab; the active one is underlined in ink, not filled.
 export function NavPill({ active, children, onClick, className }: NavPillProps) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "rounded-full px-3 py-1 text-[11px] font-medium transition-colors",
+        "label-caps pb-1.5 border-b transition-colors duration-200",
         active
-          ? "bg-forest text-cream border border-forest"
-          : "border-[0.5px] border-surface-border text-sand-subtle hover:text-sand hover:border-surface-border-hover",
+          ? "border-sand text-sand"
+          : "border-transparent text-sand-subtle hover:text-sand",
         className
       )}
     >

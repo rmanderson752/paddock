@@ -78,22 +78,20 @@ export function AlertButton({
     <div ref={ref} className="relative">
       <button
         onClick={handleToggle}
-        className={`inline-flex items-center gap-1.5 rounded-full border-[0.5px] px-3 py-1 text-[11px] font-medium transition-colors ${
-          saved
-            ? "border-forest bg-forest text-cream"
-            : "border-surface-border text-sand-subtle hover:border-surface-border-hover hover:text-sand"
+        className={`inline-flex items-center gap-2 label-caps transition-colors ${
+          saved ? "text-forest" : "text-sand-subtle hover:text-sand"
         }`}
         title={saved ? "Alert set — manage on the Alerts page" : "Set a price alert"}
         aria-expanded={open}
       >
-        <Bell size={12} className={saved ? "fill-current" : ""} />
+        <Bell size={13} strokeWidth={1.5} className={saved ? "fill-current" : ""} />
         {saved ? "Alert set" : "Set alert"}
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border-[0.5px] border-surface-border bg-surface p-4 shadow-xl z-40">
-          <div className="text-sm font-medium text-sand mb-0.5">Price alert</div>
-          <div className="text-[11px] text-sand-subtle mb-3 truncate">{carName}</div>
+        <div className="absolute left-0 top-full mt-3 w-80 max-w-[calc(100vw-2rem)] rounded-[4px] border border-surface-border bg-surface-page p-5 shadow-[0_16px_48px_-16px_rgba(21,32,27,0.3)] z-40">
+          <div className="label-caps text-brass mb-1">Price alert</div>
+          <div className="display-serif text-[18px] text-sand mb-4 truncate">{carName}</div>
 
           <form action={formAction} className="space-y-3">
             <input type="hidden" name="generationId" value={generationId} />
@@ -103,7 +101,7 @@ export function AlertButton({
               {options.map((opt) => (
                 <label
                   key={opt.value}
-                  className={`flex items-start gap-2 rounded-lg border-[0.5px] px-3 py-2 cursor-pointer transition-colors ${
+                  className={`flex items-start gap-2.5 rounded-[3px] border px-3 py-2.5 cursor-pointer transition-colors ${
                     alertType === opt.value
                       ? "border-forest bg-forest-muted"
                       : "border-surface-border hover:border-surface-border-hover"
@@ -115,7 +113,7 @@ export function AlertButton({
                     value={opt.value}
                     checked={alertType === opt.value}
                     onChange={() => setAlertType(opt.value)}
-                    className="mt-0.5 accent-[#12503f]"
+                    className="mt-0.5 accent-[#0f3d31]"
                   />
                   <span>
                     <span className="block text-[13px] text-sand">{opt.label}</span>

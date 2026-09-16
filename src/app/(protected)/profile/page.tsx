@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { Card } from "@/components/ui/Card";
@@ -53,10 +54,10 @@ export default async function ProfilePage() {
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
-        <h1 className="font-serif text-2xl mb-6">Profile</h1>
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        <PageTitle eyebrow="Account" title="Profile" />
 
-        <div className="max-w-xl space-y-4">
+        <div className="max-w-xl space-y-5 pt-8">
           {/* Avatar + Name */}
           <Card className="flex items-center gap-4">
             {avatarUrl ? (
@@ -68,9 +69,9 @@ export default async function ProfilePage() {
               </div>
             )}
             <div className="min-w-0">
-              <div className="text-sand font-medium truncate">{name ?? "User"}</div>
-              <div className="text-sm text-sand-subtle truncate">{session.email}</div>
-              <div className="text-[11px] text-sand-faint mt-0.5">
+              <div className="display-serif text-[22px] text-sand truncate">{name ?? "User"}</div>
+              <div className="text-[13px] text-sand-subtle truncate">{session.email}</div>
+              <div className="label-caps text-sand-faint mt-1.5">
                 {memberSince && `Member since ${memberSince}`}
                 {usesGoogle && `${memberSince ? " · " : ""}Signed in with Google`}
               </div>
@@ -83,10 +84,10 @@ export default async function ProfilePage() {
               <Link
                 key={c.label}
                 href={c.href}
-                className="rounded-xl bg-surface p-3.5 hover:bg-surface-hover transition-colors"
+                className="border-t border-surface-border pt-3 hover:text-forest transition-colors"
               >
-                <div className="text-[11px] uppercase tracking-[0.5px] text-sand-subtle">{c.label}</div>
-                <div className="text-xl font-serif text-sand mt-0.5">{c.value}</div>
+                <div className="label-caps text-sand-subtle">{c.label}</div>
+                <div className="display-serif numerals text-[26px] text-sand mt-1">{c.value}</div>
               </Link>
             ))}
           </div>
@@ -96,8 +97,8 @@ export default async function ProfilePage() {
             <ChangePasswordForm />
           ) : (
             <Card>
-              <h2 className="text-sm font-medium text-sand mb-1">Password</h2>
-              <p className="text-sm text-sand-muted">
+              <h2 className="label-caps text-sand mb-2">Password</h2>
+              <p className="text-[13px] text-sand-muted">
                 This account signs in with Google, so there&apos;s no password to manage.
               </p>
             </Card>

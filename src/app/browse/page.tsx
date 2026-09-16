@@ -6,6 +6,7 @@ import { MakeGrid } from "@/components/features/browse/MakeGrid";
 import { PriceRangeGrid } from "@/components/features/browse/PriceRangeGrid";
 import { EraGrid } from "@/components/features/browse/EraGrid";
 import { TopMoversCompact } from "@/components/features/browse/TopMoversCompact";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 import {
   getCategoryIndices,
   getAllMakesWithCounts,
@@ -25,42 +26,40 @@ export default async function BrowsePage() {
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
-        <h1 className="font-serif text-2xl mb-1">Browse</h1>
-        <p className="text-sm text-sand-muted mb-8">
-          Explore collector cars by category, make, price, or era.
-        </p>
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        <div className="pt-12 pb-10 border-b border-surface-border">
+          <p className="label-caps text-brass mb-4">The market</p>
+          <h1 className="display-serif text-[40px] sm:text-[52px] text-sand">Browse</h1>
+          <p className="mt-4 text-[15px] text-sand-muted max-w-xl">
+            Every tracked car by category, marque, price and era.
+          </p>
+        </div>
 
-        {/* By Category */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-sand mb-3">By Category</h2>
+        <section className="pt-14">
+          <SectionTitle>By category</SectionTitle>
           <CategoryGrid indices={categoryIndices} />
         </section>
 
-        {/* By Make */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-sand mb-3">By Make</h2>
+        <section className="pt-16">
+          <SectionTitle>By marque</SectionTitle>
           <MakeGrid makes={makesWithCounts} />
         </section>
 
-        {/* By Price Range */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-sand mb-3">By Price Range</h2>
+        <section className="pt-16">
+          <SectionTitle aside="Twelve-month average">By price</SectionTitle>
           <PriceRangeGrid generations={allGenerations} />
         </section>
 
-        {/* By Era */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-sand mb-3">By Era</h2>
+        <section className="pt-16">
+          <SectionTitle aside="First model year">By era</SectionTitle>
           <EraGrid generations={allGenerations} />
         </section>
 
-        {/* Trending */}
-        <section className="mb-8">
-          <h2 className="text-sm font-medium text-sand mb-3">Trending</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <TopMoversCompact title="Top Gainers" cars={gainers} />
-            <TopMoversCompact title="Top Losers" cars={losers} />
+        <section className="pt-16">
+          <SectionTitle aside="Twelve-month trend">Movers</SectionTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-14 gap-y-10">
+            <TopMoversCompact title="Gaining" cars={gainers} />
+            <TopMoversCompact title="Softening" cars={losers} />
           </div>
         </section>
       </main>

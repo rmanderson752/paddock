@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { Footer } from "@/components/layout/Footer";
 import { Card } from "@/components/ui/Card";
 import { getSession } from "@/lib/auth/session";
@@ -86,9 +87,9 @@ export default async function AdminPage() {
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6">
-        <h1 className="font-serif text-2xl mb-1">Admin Dashboard</h1>
-        <p className="text-sm text-sand-muted mb-6">
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-12">
+        <PageTitle eyebrow="Back office" title="Admin" />
+        <p className="text-[13px] text-sand-muted pt-6 mb-8">
           Sale data through {formatDate(asOf)}. Scheduled refresh: {describeSchedule(schedule)} —{" "}
           {inAppSchedulerOn
             ? `in-app scheduler on, next run ${formatStamp(nextRun.toISOString())}`
@@ -108,20 +109,20 @@ export default async function AdminPage() {
             { label: "Portfolio Items", value: portfolioCount },
             { label: "Price Alerts", value: alertCount },
           ].map((stat) => (
-            <Card key={stat.label}>
-              <div className="text-[11px] uppercase tracking-wide text-sand-faint">{stat.label}</div>
-              <div className="text-xl font-serif mt-1">{stat.value}</div>
-            </Card>
+            <div key={stat.label} className="border-t border-surface-border pt-3">
+              <div className="label-caps text-sand-subtle">{stat.label}</div>
+              <div className="display-serif numerals text-[24px] text-sand mt-1">{stat.value}</div>
+            </div>
           ))}
         </div>
 
         {/* Actions */}
-        <h2 className="text-sm font-medium text-sand mb-3">Actions</h2>
+        <h2 className="label-caps text-sand mb-4">Actions</h2>
         <AdminActions />
 
         {/* Refresh history */}
         <div className="mt-8">
-          <h2 className="text-sm font-medium text-sand mb-3">Refresh History</h2>
+          <h2 className="label-caps text-sand mb-4">Refresh history</h2>
           <Card>
             {refreshRuns.length === 0 ? (
               <p className="text-sm text-sand-muted">
@@ -163,8 +164,8 @@ export default async function AdminPage() {
         {/* Zero sales warnings */}
         {zeroSalesGens.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-sm font-medium text-sand mb-3">
-              Generations with Zero Sales ({zeroSalesGens.length}) — hidden from browse until data arrives
+            <h2 className="label-caps text-sand mb-4">
+              Generations with zero sales ({zeroSalesGens.length}) — hidden until data arrives
             </h2>
             <Card>
               <div className="divide-y divide-surface-border">
@@ -181,7 +182,7 @@ export default async function AdminPage() {
 
         {/* Recent sales */}
         <div className="mt-8">
-          <h2 className="text-sm font-medium text-sand mb-3">Latest Sales</h2>
+          <h2 className="label-caps text-sand mb-4">Latest sales</h2>
           <Card>
             <div className="divide-y divide-surface-border">
               {recentSales.map((s, i) => (

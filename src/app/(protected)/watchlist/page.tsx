@@ -1,4 +1,5 @@
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { WatchlistGrid } from "@/components/features/watchlist/WatchlistGrid";
@@ -22,14 +23,19 @@ export default async function WatchlistPage() {
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
-        <h1 className="font-serif text-2xl mb-1">Watchlist</h1>
-        <p className="text-sm text-sand-muted mb-6">
-          {cars.length === 0
-            ? "Cars you star show up here with their latest values."
-            : `${cars.length} car${cars.length !== 1 ? "s" : ""} · last 12 months of sales`}
-        </p>
-        <WatchlistGrid cars={cars} isAuthenticated={true} sparklineData={sparklineData} />
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        <PageTitle
+          eyebrow="Your collection"
+          title="Watchlist"
+          description={
+            cars.length === 0
+              ? "Cars you star appear here with their latest values."
+              : `${cars.length} car${cars.length !== 1 ? "s" : ""} · twelve months of sales`
+          }
+        />
+        <div className="pt-8">
+          <WatchlistGrid cars={cars} isAuthenticated={true} sparklineData={sparklineData} />
+        </div>
       </main>
       <Footer />
       <MobileNav />

@@ -66,19 +66,19 @@ export function AdminActions() {
           <div key={action.key} className="py-3 first:pt-0 last:pb-0 space-y-2">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm text-sand">{action.title}</div>
-                <div className="text-[11px] text-sand-faint">{action.description}</div>
+                <div className="text-[14px] text-sand">{action.title}</div>
+                <div className="text-[12px] text-sand-faint mt-0.5">{action.description}</div>
               </div>
               <button
                 onClick={() => run(action)}
                 disabled={busy !== null}
-                className="shrink-0 px-3 py-1.5 text-[12px] rounded-full bg-forest text-cream hover:bg-forest-dark transition-colors disabled:opacity-50"
+                className="shrink-0 label-caps rounded-[3px] bg-forest px-4 py-2.5 text-cream hover:bg-forest-dark transition-colors disabled:opacity-50"
               >
                 {busy === action.key ? action.busyLabel : action.label}
               </button>
             </div>
             {messages[action.key] && (
-              <div className="text-[12px] text-forest-light">{messages[action.key]}</div>
+              <div className="text-[12px] text-forest">{messages[action.key]}</div>
             )}
           </div>
         ))}

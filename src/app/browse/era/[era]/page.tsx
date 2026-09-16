@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { SortableResults } from "@/components/features/search/SortableResults";
 import { getGenerationsByEra, getSparklineDataForGenerations } from "@/lib/data";
 import { eras, type Era } from "@/lib/types";
-import Link from "next/link";
 
 export default async function BrowseEraPage({
   params,
@@ -22,25 +22,21 @@ export default async function BrowseEraPage({
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
-        <div className="flex items-center gap-2 text-[12px] text-sand-subtle mb-4">
-          <Link href="/browse" className="hover:text-sand transition-colors">
-            Browse
-          </Link>
-          <span className="text-sand-faint">/</span>
-          <span className="text-sand">{eraData.label}</span>
-        </div>
-
-        <h1 className="font-serif text-2xl mb-1">{eraData.label}</h1>
-        <p className="text-sm text-sand-muted mb-6">
-          {cars.length} model{cars.length !== 1 ? "s" : ""} from this era
-        </p>
-        <SortableResults
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        <PageTitle
+          crumbs={[{ href: "/browse", label: "Browse" }]}
+          eyebrow={"Era"}
+          title={eraData.label}
+          description={`${cars.length} model${cars.length !== 1 ? "s" : ""} from this era`}
+        />
+        <div className="pt-8">
+          <SortableResults
           results={cars}
           showSparklines
           sparklineData={sparklineData}
           emptyMessage="No models from this era."
         />
+        </div>
       </main>
       <Footer />
       <MobileNav />

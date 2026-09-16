@@ -49,33 +49,33 @@ export function StatsGrid({ stats, recentSales }: StatsGridProps) {
     .join(", ");
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-8 py-8 border-b border-surface-border">
       <StatBlock
-        label="Last Sale"
+        label="Last sale"
         value={formatPrice(stats.lastSalePrice)}
         subtext={lastSaleSubtext}
       />
       <StatBlock
-        label="52-wk High"
+        label="52-week high"
         value={formatPrice(stats.high52wk)}
         subtext={highSubtext}
       />
       <StatBlock
-        label="52-wk Low"
+        label="52-week low"
         value={formatPrice(stats.low52wk)}
         subtext={lowSubtext}
       />
       <StatBlock
-        label="Avg (12mo)"
+        label="Twelve-month average"
         value={formatPrice(stats.avgPrice12mo)}
       />
       <StatBlock
-        label="Sales (12mo)"
+        label="Sales, twelve months"
         value={String(stats.salesCount12mo)}
         subtext={topSources || undefined}
       />
       <StatBlock
-        label="12-mo Trend"
+        label="Trend"
         value={trendLabel}
         valueClassName={trendColor}
         subtext={

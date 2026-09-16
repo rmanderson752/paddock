@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { PortfolioClient } from "@/components/features/portfolio/PortfolioClient";
@@ -53,13 +54,15 @@ export default async function PortfolioPage() {
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
-        <h1 className="font-serif text-2xl mb-6">Portfolio</h1>
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        <PageTitle eyebrow="Your collection" title="Portfolio" description="What you paid against what the market is paying now." />
+        <div className="pt-8">
         <PortfolioClient
           items={items}
           totalValue={totalValue}
           totalInvested={totalInvested}
         />
+        </div>
       </main>
       <Footer />
       <MobileNav />

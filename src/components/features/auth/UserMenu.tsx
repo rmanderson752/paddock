@@ -36,7 +36,7 @@ export function UserMenu({ name, email, avatarUrl, isAdmin }: UserMenuProps) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-sm text-sand-subtle hover:text-sand transition-colors"
+        className="flex items-center gap-2 label-caps text-sand-subtle hover:text-sand transition-colors"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -57,7 +57,7 @@ export function UserMenu({ name, email, avatarUrl, isAdmin }: UserMenuProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-48 rounded-xl border-[0.5px] border-surface-border bg-surface py-1 shadow-lg z-50">
+        <div className="absolute right-0 mt-3 w-52 rounded-[4px] border border-surface-border bg-surface-page py-1 shadow-[0_12px_40px_-12px_rgba(21,32,27,0.25)] z-50">
           <div className="px-4 py-2 border-b border-surface-border">
             <div className="text-sm text-sand truncate">{name ?? "User"}</div>
             <div className="text-[11px] text-sand-subtle truncate">{email}</div>

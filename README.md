@@ -122,12 +122,17 @@ scripts/               seed, scrape, clean, refresh-stats, refresh-db, schedule/
 data/                  paddock.db (git-ignored)
 ```
 
-## Theme
+## Design
 
-Sand paper, darker-sand panels, wealthy green accents. Colors are defined once
-in `src/app/globals.css` as context-aware CSS variables: anything painted with
-`bg-surface` is a panel, anything painted solid green flips its text to cream.
-Chart colors live in `src/lib/theme.ts`.
+Luxury-editorial: ivory paper, deep racing green as the only accent, a whisper
+of brass in the rules. Type does the work — Bodoni Moda (a Didone) for names
+and prices, Jost in small tracked capitals for labels, tabular numerals so
+prices align like a ledger. Hairlines instead of boxes; squared corners; no
+heavy shadows. Reusable pieces: `label-caps`, `display-serif`, `numerals` and
+`rule-brass` utilities in `src/app/globals.css`, plus `SectionTitle` and
+`PageTitle` in `src/components/ui`. Colours are context-aware CSS variables
+(`bg-surface` plates, solid-green surfaces flip their text to ivory); chart
+colours live in `src/lib/theme.ts`.
 
 ## Environment
 

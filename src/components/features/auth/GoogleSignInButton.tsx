@@ -17,7 +17,7 @@ export function GoogleSignInButton({ redirectTo, label = "Continue with Google" 
     <Link
       href={href}
       prefetch={false}
-      className="flex w-full items-center justify-center gap-2.5 rounded-full border-[0.5px] border-surface-border bg-surface-page px-4 py-2.5 text-sm font-medium text-sand transition-colors hover:border-surface-border-hover hover:bg-surface-hover"
+      className="flex w-full items-center justify-center gap-3 rounded-[3px] border border-surface-border-hover bg-surface-page px-4 py-3 label-caps text-sand transition-colors hover:bg-surface-hover"
     >
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
         <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.7 17.7 9.5 24 9.5z" />
@@ -32,7 +32,7 @@ export function GoogleSignInButton({ redirectTo, label = "Continue with Google" 
 
 export function OrDivider() {
   return (
-    <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.5px] text-sand-faint">
+    <div className="flex items-center gap-3 label-caps text-sand-faint">
       <span className="h-px flex-1 bg-surface-border" />
       or
       <span className="h-px flex-1 bg-surface-border" />

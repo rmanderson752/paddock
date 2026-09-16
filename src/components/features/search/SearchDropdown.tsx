@@ -61,8 +61,9 @@ export function SearchDropdown() {
     <div ref={ref} className="relative w-full">
       <form onSubmit={handleSubmit}>
         <Search
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sand-faint"
-          size={16}
+          className="absolute left-0 top-1/2 -translate-y-1/2 text-sand-faint"
+          size={14}
+          strokeWidth={1.5}
         />
         <input
           type="text"
@@ -74,12 +75,12 @@ export function SearchDropdown() {
           onFocus={() => setDismissed(false)}
           placeholder="Search make, model, generation..."
           aria-label="Search cars"
-          className="w-full rounded-[10px] border-[0.5px] border-surface-border bg-surface py-2.5 pl-10 pr-4 text-sm text-sand placeholder:text-sand-faint outline-none transition-colors focus:border-surface-border-hover"
+          className="w-full border-b border-surface-border bg-transparent py-2 pl-7 pr-2 text-[13px] text-sand placeholder:text-sand-faint outline-none transition-colors focus:border-sand"
         />
       </form>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-[10px] border-[0.5px] border-surface-border bg-surface shadow-xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 rounded-[4px] border border-surface-border bg-surface-page shadow-[0_12px_40px_-12px_rgba(21,32,27,0.25)] z-50 overflow-hidden">
           {visible.map((car) => (
             <button
               key={car.id}
@@ -90,18 +91,18 @@ export function SearchDropdown() {
                   `/car/${car.make.slug}/${car.model.slug}/${car.slug}`
                 );
               }}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-hover transition-colors border-b border-surface-border last:border-b-0 text-left"
+              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-surface-hover transition-colors border-b border-surface-border last:border-b-0 text-left"
             >
               <div>
-                <div className="text-[11px] text-sand-subtle">{car.make.name}</div>
-                <div className="text-[14px] font-medium text-sand">{car.name}</div>
+                <div className="label-caps text-sand-subtle">{car.make.name}</div>
+                <div className="display-serif text-[17px] text-sand mt-0.5">{car.name}</div>
                 <div className="text-[11px] text-sand-faint mt-0.5">
                   {car.yearStart}–{car.yearEnd ?? "present"}
                   {car.chassisCode && ` · ${car.chassisCode}`}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[13px] font-medium text-sand">
+                <div className="display-serif numerals text-[16px] text-sand">
                   {formatPrice(car.stats.avgPrice12mo)}
                 </div>
                 <TrendIndicator value={car.stats.trendPercentage} />

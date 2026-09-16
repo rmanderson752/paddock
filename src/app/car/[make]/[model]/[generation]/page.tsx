@@ -81,24 +81,22 @@ export default async function CarDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
         <CarHeader car={car} isWatched={watched} isAuthenticated={!!session} />
 
-        <div className="mt-6">
-          <CarDetailClient
-            generationId={car.id}
-            stats={car.stats}
-            allSales={sales}
-            activeListings={activeListings}
-            asOf={asOf}
-          />
-        </div>
-
         {car.description && (
-          <div className="mt-6 text-sm text-sand-muted leading-relaxed">
+          <p className="display-serif text-[20px] sm:text-[24px] leading-snug text-sand-muted max-w-3xl pt-8 italic">
             {car.description}
-          </div>
+          </p>
         )}
+
+        <CarDetailClient
+          generationId={car.id}
+          stats={car.stats}
+          allSales={sales}
+          activeListings={activeListings}
+          asOf={asOf}
+        />
       </main>
       <Footer />
       <MobileNav />

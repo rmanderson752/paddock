@@ -18,13 +18,13 @@ export default function CarDetailError({
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-4 py-2 text-sm bg-forest text-cream rounded-lg hover:bg-forest-dark transition-colors"
+            className="label-caps rounded-[3px] bg-forest px-5 py-3 text-cream hover:bg-forest-dark transition-colors"
           >
             Try again
           </button>
           <Link
             href="/browse"
-            className="px-4 py-2 text-sm border border-surface-border rounded-lg hover:bg-surface-hover transition-colors"
+            className="label-caps rounded-[3px] border border-surface-border-hover px-5 py-3 text-sand hover:bg-surface-hover transition-colors"
           >
             Browse cars
           </Link>

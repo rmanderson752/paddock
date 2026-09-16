@@ -83,7 +83,7 @@ export function CarDetailClient({
   }, [allSales]);
 
   return (
-    <div className="space-y-4">
+    <div>
       <PriceChart
         stats={filteredStats}
         allSales={allSales}

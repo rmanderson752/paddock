@@ -50,8 +50,8 @@ export function WatchlistStar({
       disabled={loading}
       className={`shrink-0 transition-colors ${
         watched
-          ? "text-gold hover:text-gold/70"
-          : "text-sand-faint hover:text-gold"
+          ? "text-brass hover:text-brass/70"
+          : "text-sand-faint hover:text-brass"
       } ${loading ? "opacity-50" : ""} ${className}`}
       title={watched ? "Remove from watchlist" : "Add to watchlist"}
       aria-label={watched ? "Remove from watchlist" : "Add to watchlist"}
@@ -59,7 +59,8 @@ export function WatchlistStar({
     >
       <Star
         size={size}
-        className={watched ? "fill-gold" : "fill-none"}
+        strokeWidth={1.25}
+        className={watched ? "fill-brass" : "fill-none"}
       />
     </button>
   );

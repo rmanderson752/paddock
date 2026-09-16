@@ -23,14 +23,14 @@ export function AuthForm({ mode, action, redirectTo }: AuthFormProps) {
     <form action={formAction} className="space-y-4">
       {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
       {state?.error && (
-        <div className="rounded-lg bg-maroon-muted border border-surface-border-hover px-4 py-3 text-sm text-sand">
+        <div className="rounded-[3px] bg-maroon-muted px-4 py-3 text-[13px] text-sand">
           {state.error}
         </div>
       )}
 
       {mode === "signup" && (
         <div>
-          <label htmlFor="name" className="block text-[12px] text-sand-subtle mb-1.5">
+          <label htmlFor="name" className="block label-caps text-sand-subtle mb-2">
             Name
           </label>
           <Input
@@ -45,7 +45,7 @@ export function AuthForm({ mode, action, redirectTo }: AuthFormProps) {
       )}
 
       <div>
-        <label htmlFor="email" className="block text-[12px] text-sand-subtle mb-1.5">
+        <label htmlFor="email" className="block label-caps text-sand-subtle mb-2">
           Email
         </label>
         <Input
@@ -59,7 +59,7 @@ export function AuthForm({ mode, action, redirectTo }: AuthFormProps) {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-[12px] text-sand-subtle mb-1.5">
+        <label htmlFor="password" className="block label-caps text-sand-subtle mb-2">
           Password
         </label>
         <Input
@@ -76,7 +76,7 @@ export function AuthForm({ mode, action, redirectTo }: AuthFormProps) {
       <Button
         type="submit"
         disabled={isPending}
-        className="w-full mt-2"
+        className="w-full mt-1"
       >
         {isPending
           ? mode === "login"
@@ -89,12 +89,12 @@ export function AuthForm({ mode, action, redirectTo }: AuthFormProps) {
 
       <div className="text-center pt-2">
         {mode === "login" ? (
-          <Link href={`/signup${switchHref}`} className="text-sm text-forest-light hover:underline">
-            Don&apos;t have an account? Sign up
+          <Link href={`/signup${switchHref}`} className="label-caps text-sand-subtle hover:text-sand transition-colors">
+            No account? <span className="text-forest">Sign up</span>
           </Link>
         ) : (
-          <Link href={`/login${switchHref}`} className="text-sm text-forest-light hover:underline">
-            Already have an account? Sign in
+          <Link href={`/login${switchHref}`} className="label-caps text-sand-subtle hover:text-sand transition-colors">
+            Have an account? <span className="text-forest">Sign in</span>
           </Link>
         )}
       </div>

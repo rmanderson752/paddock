@@ -5,11 +5,12 @@ interface CardProps {
   className?: string;
 }
 
+// A plate: a shade deeper than the page with a hairline, squared corners.
 export function Card({ children, className }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border-[0.5px] border-surface-border bg-surface px-4 py-3 sm:px-5 sm:py-4",
+        "rounded-[4px] border border-surface-border bg-surface px-5 py-5 sm:px-6 sm:py-6",
         className
       )}
     >

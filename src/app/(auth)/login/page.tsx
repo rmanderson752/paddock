@@ -1,6 +1,6 @@
 import { AuthForm } from "@/components/features/auth/AuthForm";
 import { GoogleSignInButton, OrDivider } from "@/components/features/auth/GoogleSignInButton";
-import { LogoMark } from "@/components/ui/Logo";
+import { Wordmark } from "@/components/ui/Logo";
 import { login } from "@/lib/auth/actions";
 import { isGoogleConfigured } from "@/lib/auth/google";
 import Link from "next/link";
@@ -24,20 +24,20 @@ export default async function LoginPage({
   const googleEnabled = isGoogleConfigured();
   const errorMessage = error ? errorMessages[error] : undefined;
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center px-5 py-12">
       <div className="w-full max-w-sm">
-        <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <LogoMark size={28} />
-          <span className="font-serif text-2xl text-sand">Paddock</span>
+        <Link href="/" className="flex justify-center mb-10">
+          <Wordmark size="lg" />
         </Link>
 
-        <h1 className="font-serif text-xl text-sand text-center mb-6">
-          Sign in to your account
+        <p className="label-caps text-brass text-center mb-3">Welcome back</p>
+        <h1 className="display-serif text-[30px] text-sand text-center mb-8">
+          Sign in
         </h1>
 
-        <div className="rounded-xl border-[0.5px] border-surface-border bg-surface p-6 space-y-4">
+        <div className="rounded-[4px] border border-surface-border bg-surface p-7 space-y-5">
           {errorMessage && (
-            <div className="rounded-lg bg-maroon-muted border border-surface-border-hover px-4 py-3 text-sm text-sand">
+            <div className="rounded-[3px] bg-maroon-muted px-4 py-3 text-[13px] text-sand">
               {errorMessage}
             </div>
           )}

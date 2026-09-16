@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/Card";
-import { formatPrice } from "@/lib/utils";
+import { SectionTitle } from "@/components/ui/SectionTitle";
+import { formatPrice, formatDate } from "@/lib/utils";
 import { type Sale, type ActiveListing, sourceLabels } from "@/lib/types";
 
 // Map common car colors to CSS colors
@@ -117,58 +117,51 @@ export function RecentSalesFeed({ sales, activeListings }: RecentSalesFeedProps)
   const recentSales = sales.slice(-15).reverse();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-10 pt-10">
       {/* Sold Sales */}
-      <Card>
-        <h3 className="text-sm font-medium text-sand mb-3">Recent Sales</h3>
-        <div className="divide-y divide-surface-border">
-          {recentSales.map((sale, i) => {
+      <section>
+        <SectionTitle aside={`${sales.length} completed`}>Sale record</SectionTitle>
+        <ul className="divide-y divide-surface-border border-b border-surface-border">
+          {recentSales.map((sale) => {
             const dotColor = getColorDot(sale.color);
             return (
-              <div
-                key={sale.id}
-                className={`flex items-start justify-between py-2.5 ${
-                  i % 2 === 1 ? "bg-white/[0.02] -mx-4 px-4 sm:-mx-5 sm:px-5" : ""
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  {dotColor && (
-                    <div
-                      className="w-2 h-2 rounded-full shrink-0 mt-1.5"
-                      style={{ backgroundColor: dotColor }}
-                      title={sale.color ?? undefined}
-                    />
-                  )}
-                  <div>
-                    <div className="text-[13px] text-sand">{sale.saleDate}</div>
-                    <div className="text-[11px] text-sand-faint mt-0.5">
-                      {sale.mileage ? `${sale.mileage.toLocaleString()} mi` : "N/A"}
-                      {sale.color && ` · ${sale.color}`}
-                      {" · "}
-                      <span className="text-forest-light">
-                        {sourceLabels[sale.source] ?? sale.source}
-                      </span>
-                    </div>
-                    {sale.conditionNotes && (
-                      <div className="text-[10px] text-sand-faint mt-0.5 italic">
-                        {sale.conditionNotes}
-                      </div>
+              <li key={sale.id} className="grid grid-cols-[auto_1fr_auto] items-start gap-x-5 py-4">
+                <div className="label-caps text-sand-faint numerals w-24 pt-1 whitespace-nowrap">{formatDate(sale.saleDate)}</div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-[13px] text-sand">
+                    {dotColor && (
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0 ring-1 ring-surface-border"
+                        style={{ backgroundColor: dotColor }}
+                        title={sale.color ?? undefined}
+                      />
                     )}
+                    <span>
+                      {sale.year ? `${sale.year} · ` : ""}
+                      {sale.mileage ? `${sale.mileage.toLocaleString()} mi` : "Mileage not stated"}
+                      {sale.color && ` · ${sale.color}`}
+                    </span>
                   </div>
+                  <div className="label-caps text-sand-faint mt-1.5">{sourceLabels[sale.source] ?? sale.source}</div>
+                  {sale.conditionNotes && (
+                    <div className="text-[12px] leading-relaxed text-sand-subtle mt-1.5 italic max-w-2xl">
+                      {sale.conditionNotes}
+                    </div>
+                  )}
                 </div>
-                <div className="text-[13px] font-medium text-sand shrink-0 ml-3">
+                <div className="display-serif numerals text-[18px] text-sand shrink-0">
                   {formatPrice(sale.salePrice)}
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
-      </Card>
+        </ul>
+      </section>
 
       {/* Active Listings */}
       {activeListings && activeListings.length > 0 && (
-        <Card>
-          <h3 className="text-sm font-medium text-gold mb-3">Active Listings</h3>
+        <section>
+          <SectionTitle>Currently listed</SectionTitle>
           <div className="divide-y divide-surface-border">
             {activeListings.map((listing) => {
               const dotColor = getColorDot(listing.color);
@@ -205,7 +198,7 @@ export function RecentSalesFeed({ sales, activeListings }: RecentSalesFeedProps)
               );
             })}
           </div>
-        </Card>
+        </section>
       )}
     </div>
   );

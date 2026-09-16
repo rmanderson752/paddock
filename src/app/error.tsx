@@ -11,20 +11,20 @@ export default function Error({
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="text-center">
-        <h1 className="font-serif text-3xl mb-2">Something went wrong</h1>
+        <h1 className="display-serif text-[36px] text-sand mb-3">Something went wrong</h1>
         <p className="text-sm text-sand-muted mb-6">
           An unexpected error occurred. Please try again.
         </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-4 py-2 text-sm bg-forest text-cream rounded-lg hover:bg-forest-dark transition-colors"
+            className="label-caps rounded-[3px] bg-forest px-5 py-3 text-cream hover:bg-forest-dark transition-colors"
           >
             Try again
           </button>
           <Link
             href="/"
-            className="px-4 py-2 text-sm border border-surface-border rounded-lg hover:bg-surface-hover transition-colors"
+            className="label-caps rounded-[3px] border border-surface-border-hover px-5 py-3 text-sand hover:bg-surface-hover transition-colors"
           >
             Go home
           </Link>

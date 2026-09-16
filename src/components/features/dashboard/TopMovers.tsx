@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { NavPill } from "@/components/ui/NavPill";
 import { TrendIndicator } from "@/components/ui/TrendIndicator";
-import { Card } from "@/components/ui/Card";
 import { formatPrice } from "@/lib/utils";
 import type { GenerationWithDetails } from "@/lib/types";
 
@@ -18,37 +17,39 @@ export function TopMovers({ gainers, losers }: TopMoversProps) {
   const items = tab === "gainers" ? gainers : losers;
 
   return (
-    <Card>
-      <div className="flex gap-1.5 mb-4">
+    <div>
+      <div className="flex gap-6 mb-2">
         <NavPill active={tab === "gainers"} onClick={() => setTab("gainers")}>
-          Top Gainers
+          Gaining
         </NavPill>
         <NavPill active={tab === "losers"} onClick={() => setTab("losers")}>
-          Top Losers
+          Softening
         </NavPill>
       </div>
-      <div className="divide-y divide-surface-border">
-        {items.map((car) => (
-          <Link
-            key={car.id}
-            href={`/car/${car.make.slug}/${car.model.slug}/${car.slug}`}
-            className="flex items-center justify-between py-2.5 hover:bg-surface-hover -mx-4 px-4 sm:-mx-5 sm:px-5 transition-colors"
-          >
-            <div>
-              <span className="text-[13px] font-medium text-sand">{car.name}</span>
-              <span className="text-[12px] text-sand-subtle ml-1.5">
-                {car.yearStart}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] text-sand">
-                {formatPrice(car.stats.avgPrice12mo)}
-              </span>
-              <TrendIndicator value={car.stats.trendPercentage} />
-            </div>
-          </Link>
+      <ol className="divide-y divide-surface-border border-b border-surface-border">
+        {items.map((car, i) => (
+          <li key={car.id}>
+            <Link
+              href={`/car/${car.make.slug}/${car.model.slug}/${car.slug}`}
+              className="flex items-center gap-4 py-3.5 group"
+            >
+              <span className="label-caps text-sand-faint w-5 numerals">{String(i + 1).padStart(2, "0")}</span>
+              <div className="flex-1 min-w-0">
+                <div className="label-caps text-sand-subtle">{car.make.name}</div>
+                <div className="display-serif text-[18px] text-sand truncate group-hover:underline decoration-[0.5px] underline-offset-4">
+                  {car.name}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="display-serif numerals text-[16px] text-sand">
+                  {formatPrice(car.stats.avgPrice12mo)}
+                </div>
+                <TrendIndicator value={car.stats.trendPercentage} />
+              </div>
+            </Link>
+          </li>
         ))}
-      </div>
-    </Card>
+      </ol>
+    </div>
   );
 }

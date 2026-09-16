@@ -1,12 +1,13 @@
-// Chart colors — charts render inside sand panels. SVG attributes can't read
-// the context-aware CSS variables in globals.css, hence the literal values.
+// Chart colours — charts render on ivory/sand plates. SVG attributes can't
+// read the context-aware CSS variables in globals.css, hence literal values.
 export const chartColors = {
   positive: "#1b6a54",
-  negative: "#7c6a56",
-  gold: "#12503f",
+  negative: "#7a6a55",
+  gold: "#0f3d31",
   goldLight: "#7fdcb8",
-  tick: "#6a7671",
-  axis: "#ccbc9b",
-  panel: "#e4d9c2",
-  panelDeep: "#eee5d3",
+  brass: "#b3975c",
+  tick: "#6c7670",
+  axis: "#d3c8ad",
+  panel: "#e7dfcb",
+  panelDeep: "#efe8d9",
 } as const;

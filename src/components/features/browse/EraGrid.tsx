@@ -16,17 +16,17 @@ export function EraGrid({ generations: all }: EraGridProps) {
   });
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-l border-surface-border">
       {eraCards.map((era) => (
         <Link
           key={era.value}
           href={`/browse/era/${era.value}`}
-          className="rounded-xl border-[0.5px] border-surface-border bg-surface p-3.5 hover:border-surface-border-hover transition-colors"
+          className="group border-r border-b border-surface-border px-5 py-6 hover:bg-surface-hover transition-colors"
         >
-          <div className="text-[14px] font-medium text-sand mb-0.5">
+          <div className="display-serif text-[22px] text-sand group-hover:underline decoration-[0.5px] underline-offset-4">
             {era.label}
           </div>
-          <div className="text-[11px] text-sand-subtle">
+          <div className="label-caps text-sand-subtle mt-2">
             {era.count} model{era.count !== 1 ? "s" : ""}
           </div>
         </Link>

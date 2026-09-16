@@ -1,4 +1,7 @@
 import { HeaderServer } from "@/components/layout/HeaderServer";
+import { PageTitle } from "@/components/ui/PageTitle";
+import { SectionTitle } from "@/components/ui/SectionTitle";
+import { SearchDropdown } from "@/components/features/search/SearchDropdown";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { SortableResults } from "@/components/features/search/SortableResults";
@@ -19,21 +22,31 @@ export default async function SearchPage({
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
         {q ? (
           <>
-            <h1 className="font-serif text-2xl mb-6">
-              Results for &ldquo;{q}&rdquo;
-            </h1>
-            <SortableResults
-              results={results}
-              emptyMessage={`No cars found for "${q}". Try a different search.`}
+            <PageTitle
+              eyebrow="Search"
+              title={`“${q}”`}
+              description={`${results.length} result${results.length !== 1 ? "s" : ""}`}
             />
+            <div className="pt-8">
+              <SortableResults
+                results={results}
+                emptyMessage={`Nothing tracked matches “${q}”. Try a marque, model or chassis code.`}
+              />
+            </div>
           </>
         ) : (
           <>
-            <h1 className="font-serif text-2xl mb-6">Browse Categories</h1>
-            <CategoryGrid indices={categoryIndices} />
+            <PageTitle eyebrow="Search" title="Find a car" description="By marque, model, generation or chassis code." />
+            <div className="pt-8 max-w-md">
+              <SearchDropdown />
+            </div>
+            <section className="pt-16">
+              <SectionTitle>Or browse by category</SectionTitle>
+              <CategoryGrid indices={categoryIndices} />
+            </section>
           </>
         )}
       </main>

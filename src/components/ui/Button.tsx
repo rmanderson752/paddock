@@ -8,6 +8,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "md";
 }
 
+// Squared, tracked capitals — a boutique button, not a web button.
 export function Button({
   variant = "primary",
   size = "md",
@@ -18,15 +19,13 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-full font-medium transition-colors",
-        variant === "primary" &&
-          "bg-forest text-cream hover:bg-forest-dark",
+        "inline-flex items-center justify-center rounded-[3px] label-caps transition-colors duration-200 disabled:opacity-50",
+        variant === "primary" && "bg-forest text-cream hover:bg-forest-dark",
         variant === "secondary" &&
-          "border-[0.5px] border-surface-border text-sand-subtle hover:border-surface-border-hover hover:text-sand",
-        variant === "ghost" &&
-          "text-sand-subtle hover:text-sand hover:bg-surface-hover",
-        size === "sm" && "px-3 py-1.5 text-xs",
-        size === "md" && "px-4 py-2 text-sm",
+          "border border-surface-border-hover text-sand hover:bg-surface-hover",
+        variant === "ghost" && "text-sand-subtle hover:text-sand",
+        size === "sm" && "px-4 py-2",
+        size === "md" && "px-6 py-3",
         className
       )}
       {...props}

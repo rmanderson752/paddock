@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell, BellOff, Trash2 } from "lucide-react";
-import { Card } from "@/components/ui/Card";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { deleteAlert, setAlertActive } from "@/lib/auth/alert-actions";
 import type { AlertWithStatus } from "@/lib/alerts";
@@ -39,22 +38,22 @@ export function AlertList({ alerts }: AlertListProps) {
 
   if (alerts.length === 0) {
     return (
-      <Card>
-        <p className="text-sm text-sand-muted">
-          No alerts yet. Open any car and tap <strong className="text-sand font-medium">Set alert</strong> to
-          watch for a sale or a target price.
+      <div className="border-y border-surface-border py-12 text-center">
+        <p className="display-serif text-[20px] italic text-sand-muted">No alerts yet.</p>
+        <p className="mt-3 text-[13px] text-sand-subtle">
+          Open any car and choose <span className="label-caps text-sand">Set alert</span> to watch for a sale or a target price.
         </p>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="divide-y divide-surface-border">
+    <div>
+      <div className="divide-y divide-surface-border border-y border-surface-border">
         {alerts.map((alert) => (
           <div
             key={alert.id}
-            className={`flex items-center gap-3 py-3 ${alert.isActive ? "" : "opacity-60"}`}
+            className={`flex items-center gap-4 py-4 ${alert.isActive ? "" : "opacity-60"}`}
           >
             <div
               className={`w-2 h-2 rounded-full shrink-0 ${
@@ -66,15 +65,15 @@ export function AlertList({ alerts }: AlertListProps) {
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <Link
                   href={`/car/${alert.car.make.slug}/${alert.car.model.slug}/${alert.car.slug}`}
-                  className="text-[13px] font-medium text-sand hover:text-forest-light transition-colors"
+                  className="display-serif text-[18px] text-sand hover:underline decoration-[0.5px] underline-offset-4"
                 >
                   {alert.car.make.name} {alert.car.name}
                 </Link>
-                <span className="text-[11px] text-sand-subtle">{conditionLabel(alert)}</span>
+                <span className="label-caps text-sand-subtle">{conditionLabel(alert)}</span>
               </div>
-              <div className="text-[11px] text-sand-faint mt-0.5">
+              <div className="text-[12px] text-sand-faint mt-1">
                 {alert.triggered ? (
-                  <span className="text-forest-light font-medium">Condition met · </span>
+                  <span className="text-forest font-medium">Condition met · </span>
                 ) : alert.isActive ? (
                   <span>Watching · </span>
                 ) : (
@@ -104,6 +103,6 @@ export function AlertList({ alerts }: AlertListProps) {
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }

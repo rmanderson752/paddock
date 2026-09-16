@@ -66,13 +66,16 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#15201b]/50 backdrop-blur-sm px-4">
       <div
         ref={modalRef}
-        className="w-full max-w-md rounded-xl border-[0.5px] border-surface-border bg-surface-page p-6"
+        className="w-full max-w-md rounded-[4px] border border-surface-border bg-surface-page p-7 shadow-[0_24px_64px_-24px_rgba(21,32,27,0.45)]"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg text-sand">Add a Car</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="label-caps text-brass mb-1">Portfolio</div>
+            <h2 className="display-serif text-[24px] text-sand">Add a car</h2>
+          </div>
           <button
             onClick={onClose}
             className="text-sand-subtle hover:text-sand transition-colors text-lg"
@@ -91,7 +94,7 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
               autoFocus
             />
             {visibleResults.length > 0 && (
-              <div className="mt-2 max-h-64 overflow-y-auto divide-y divide-surface-border rounded-lg border-[0.5px] border-surface-border">
+              <div className="mt-2 max-h-64 overflow-y-auto divide-y divide-surface-border border-y border-surface-border">
                 {visibleResults.map((car) => (
                   <button
                     key={car.id}
@@ -100,12 +103,12 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
                       setQuery("");
                       setResults([]);
                     }}
-                    className="w-full text-left px-4 py-3 hover:bg-surface-hover transition-colors"
+                    className="w-full text-left px-2 py-3 hover:bg-surface-hover transition-colors"
                   >
-                    <div className="text-sm text-sand font-medium">
+                    <div className="display-serif text-[17px] text-sand">
                       {car.make.name} {car.name}
                     </div>
-                    <div className="text-[11px] text-sand-subtle">
+                    <div className="label-caps text-sand-subtle mt-1">
                       {car.yearStart}&ndash;{car.yearEnd ?? "present"} &middot; Avg {formatPrice(car.stats.avgPrice12mo)}
                     </div>
                   </button>
@@ -113,7 +116,7 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
               </div>
             )}
             {query.length >= 2 && visibleResults.length === 0 && (
-              <p className="mt-3 text-sm text-sand-subtle text-center">No cars found</p>
+              <p className="mt-4 label-caps text-sand-subtle text-center">No cars found</p>
             )}
           </div>
         ) : (
@@ -122,32 +125,32 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
             <input type="hidden" name="generationId" value={selectedCar.id} />
 
             {/* Selected car display */}
-            <div className="flex items-center justify-between rounded-lg bg-surface p-3">
+            <div className="flex items-center justify-between border-y border-surface-border py-3">
               <div>
-                <div className="text-sm text-sand font-medium">
+                <div className="display-serif text-[18px] text-sand">
                   {selectedCar.make.name} {selectedCar.name}
                 </div>
-                <div className="text-[11px] text-sand-subtle">
+                <div className="label-caps text-sand-subtle mt-1">
                   {selectedCar.yearStart}&ndash;{selectedCar.yearEnd ?? "present"}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedCar(null)}
-                className="text-[11px] text-forest-light hover:text-sand transition-colors"
+                className="label-caps text-forest hover:text-sand transition-colors"
               >
                 Change
               </button>
             </div>
 
             {state?.error && (
-              <div className="rounded-lg bg-maroon-muted border border-surface-border-hover px-4 py-3 text-sm text-sand">
+              <div className="rounded-[3px] bg-maroon-muted px-4 py-3 text-[13px] text-sand">
                 {state.error}
               </div>
             )}
 
             <div>
-              <label htmlFor="purchasePrice" className="block text-[12px] text-sand-subtle mb-1.5">
+              <label htmlFor="purchasePrice" className="block label-caps text-sand-subtle mb-2">
                 Purchase Price (USD)
               </label>
               <Input
@@ -163,7 +166,7 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="year" className="block text-[12px] text-sand-subtle mb-1.5">
+                <label htmlFor="year" className="block label-caps text-sand-subtle mb-2">
                   Model Year
                 </label>
                 <Input
@@ -176,7 +179,7 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
                 />
               </div>
               <div>
-                <label htmlFor="purchaseDate" className="block text-[12px] text-sand-subtle mb-1.5">
+                <label htmlFor="purchaseDate" className="block label-caps text-sand-subtle mb-2">
                   Purchase Date
                 </label>
                 <Input
@@ -188,7 +191,7 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
             </div>
 
             <div>
-              <label htmlFor="notes" className="block text-[12px] text-sand-subtle mb-1.5">
+              <label htmlFor="notes" className="block label-caps text-sand-subtle mb-2">
                 Notes (optional)
               </label>
               <textarea
@@ -197,16 +200,16 @@ export function AddCarModal({ open, onClose }: AddCarModalProps) {
                 rows={2}
                 maxLength={500}
                 placeholder="Color, condition, mods..."
-                className="w-full rounded-[10px] border-[0.5px] border-surface-border bg-surface px-4 py-3 text-[15px] text-sand placeholder:text-sand-faint outline-none transition-colors focus:border-surface-border-hover resize-none"
+                className="w-full rounded-[3px] border border-surface-border bg-surface-page px-4 py-3 text-[15px] text-sand placeholder:text-sand-faint outline-none transition-colors focus:border-sand resize-none"
               />
             </div>
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex gap-3 pt-2">
               <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending} className="flex-1">
-                {isPending ? "Adding..." : "Add to Portfolio"}
+                {isPending ? "Adding…" : "Add to portfolio"}
               </Button>
             </div>
           </form>

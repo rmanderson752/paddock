@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { formatPrice, formatPriceShort } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import type { GenerationWithDetails } from "@/lib/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,48 +65,49 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
   }
 
   const statRows = [
-    { label: "Avg Price (12mo)", key: "avgPrice12mo" as const, format: formatPrice },
-    { label: "Last Sale", key: "lastSalePrice" as const, format: formatPrice },
-    { label: "52-wk High", key: "high52wk" as const, format: formatPrice },
-    { label: "52-wk Low", key: "low52wk" as const, format: formatPrice },
-    { label: "Sales (12mo)", key: "salesCount12mo" as const, format: (v: number) => String(v) },
+    { label: "Twelve-month average", key: "avgPrice12mo" as const, format: formatPrice },
+    { label: "Last sale", key: "lastSalePrice" as const, format: formatPrice },
+    { label: "52-week high", key: "high52wk" as const, format: formatPrice },
+    { label: "52-week low", key: "low52wk" as const, format: formatPrice },
+    { label: "Sales, twelve months", key: "salesCount12mo" as const, format: (v: number) => String(v) },
     { label: "Trend", key: "trendPercentage" as const, format: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%` },
   ];
 
   return (
     <div className="space-y-4">
       {/* Car headers */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(cars.length, 1)}, 1fr)` }}>
+      <div className="grid gap-px bg-surface-border border border-surface-border" style={{ gridTemplateColumns: `repeat(${Math.max(cars.length, 1)}, 1fr)` }}>
         {cars.map((car) => (
-          <Card key={car.id} className="relative">
+          <div key={car.id} className="relative bg-surface-page px-5 py-6">
             <button
               onClick={() => removeCar(car.id)}
-              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-sand-faint hover:text-sand hover:bg-surface-hover transition-colors"
+              className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center text-sand-faint hover:text-sand transition-colors"
+              aria-label={`Remove ${car.name}`}
             >
-              <X size={14} />
+              <X size={14} strokeWidth={1.5} />
             </button>
             <Link
               href={`/car/${car.make.slug}/${car.model.slug}/${car.slug}`}
-              className="hover:text-forest-light transition-colors"
+              className="group block pr-8"
             >
-              <div className="text-[11px] text-sand-faint">{car.make.name}</div>
-              <div className="font-medium text-sand">{car.name}</div>
-              <div className="text-[11px] text-sand-subtle">
+              <div className="label-caps text-sand-subtle">{car.make.name}</div>
+              <div className="display-serif text-[22px] text-sand mt-1 group-hover:underline decoration-[0.5px] underline-offset-4">{car.name}</div>
+              <div className="label-caps text-sand-faint mt-2">
                 {car.yearStart}–{car.yearEnd ?? "present"}
               </div>
             </Link>
-            <div className="mt-2 text-lg font-serif">
-              {formatPriceShort(car.stats.avgPrice12mo)}
+            <div className="display-serif numerals text-[26px] text-sand mt-5">
+              {formatPrice(car.stats.avgPrice12mo)}
             </div>
             <div
-              className={`text-[12px] font-medium ${
-                car.stats.trendPercentage >= 0 ? "text-forest-light" : "text-maroon-light"
+              className={`text-[12px] numerals font-medium mt-1 ${
+                car.stats.trendPercentage >= 0 ? "text-forest" : "text-maroon-light"
               }`}
             >
               {car.stats.trendPercentage >= 0 ? "+" : ""}
-              {car.stats.trendPercentage.toFixed(1)}% · 12 mo
+              {car.stats.trendPercentage.toFixed(1)}% <span className="label-caps text-sand-faint ml-1">twelve months</span>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
@@ -121,8 +122,8 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
                   type="text"
                   value={query}
                   onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search cars to compare..."
-                  className="w-full pl-9 pr-3 py-2 bg-transparent text-sm text-sand placeholder:text-sand-faint outline-none border-b border-surface-border"
+                  placeholder="Search cars to compare…"
+                  className="w-full pl-8 pr-3 py-2 bg-transparent text-[14px] text-sand placeholder:text-sand-faint outline-none border-b border-surface-border focus:border-sand"
                   autoFocus
                 />
               </div>
@@ -132,20 +133,20 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
                     <button
                       key={r.id}
                       onClick={() => addCar(r)}
-                      className="w-full text-left px-2 py-2 hover:bg-surface-hover transition-colors rounded text-sm"
+                      className="w-full text-left px-2 py-2.5 hover:bg-surface-hover transition-colors"
                     >
-                      <span className="text-sand-muted text-[11px]">{r.make.name}</span>{" "}
-                      <span className="text-sand font-medium">{r.name}</span>
+                      <span className="label-caps text-sand-subtle mr-2">{r.make.name}</span>
+                      <span className="display-serif text-[16px] text-sand">{r.name}</span>
                     </button>
                   ))}
                 </div>
               )}
               {query.length >= 2 && results.length === 0 && !searching && (
-                <p className="text-sm text-sand-faint mt-2 px-2">No results found.</p>
+                <p className="label-caps text-sand-faint mt-3 px-2">No results</p>
               )}
               <button
                 onClick={() => { setShowSearch(false); setQuery(""); setResults([]); }}
-                className="mt-2 text-[12px] text-sand-faint hover:text-sand transition-colors"
+                className="mt-3 label-caps text-sand-faint hover:text-sand transition-colors"
               >
                 Cancel
               </button>
@@ -153,10 +154,10 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
           ) : (
             <button
               onClick={() => setShowSearch(true)}
-              className="flex items-center gap-2 px-4 py-3 w-full rounded-xl border border-dashed border-surface-border text-sm text-sand-muted hover:text-sand hover:border-sand-faint transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-4 w-full rounded-[3px] border border-dashed border-surface-border-hover label-caps text-sand-subtle hover:text-sand hover:border-sand transition-colors"
             >
-              <Plus size={16} />
-              Add car to compare
+              <Plus size={14} strokeWidth={1.5} />
+              Add a car to compare
             </button>
           )}
         </div>
@@ -164,13 +165,13 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
 
       {/* Comparison table */}
       {cars.length >= 2 && (
-        <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full">
             <thead>
               <tr className="border-b border-surface-border">
-                <th className="text-left text-[11px] uppercase tracking-wide text-sand-faint py-2 pr-4 w-36">Metric</th>
+                <th className="text-left label-caps text-sand-subtle py-3 pr-4 w-40">Measure</th>
                 {cars.map((car) => (
-                  <th key={car.id} className="text-right text-[11px] uppercase tracking-wide text-sand-faint py-2 px-2">
+                  <th key={car.id} className="text-right label-caps text-sand-subtle py-3 px-2">
                     {car.name}
                   </th>
                 ))}
@@ -182,16 +183,16 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
                 const best = Math.max(...values);
 
                 return (
-                  <tr key={row.label} className="border-b border-surface-border/50">
-                    <td className="py-2.5 pr-4 text-sand-muted text-[12px]">{row.label}</td>
+                  <tr key={row.label} className="border-b border-surface-border">
+                    <td className="py-3.5 pr-4 label-caps text-sand-subtle">{row.label}</td>
                     {cars.map((car) => {
                       const val = car.stats[row.key];
                       const isBest = cars.length > 1 && val === best;
                       return (
                         <td
                           key={car.id}
-                          className={`py-2.5 px-2 text-right text-[13px] ${
-                            isBest ? "text-forest-light font-medium" : "text-sand"
+                          className={`py-3.5 px-2 text-right display-serif numerals text-[18px] ${
+                            isBest ? "text-forest" : "text-sand"
                           }`}
                         >
                           {row.format(val)}
@@ -202,33 +203,31 @@ export function CompareClient({ initialCars: cars }: CompareClientProps) {
                 );
               })}
               {/* Year range */}
-              <tr>
-                <td className="py-2.5 pr-4 text-sand-muted text-[12px]">Years</td>
+              <tr className="border-b border-surface-border">
+                <td className="py-3.5 pr-4 label-caps text-sand-subtle">Years</td>
                 {cars.map((car) => (
-                  <td key={car.id} className="py-2.5 px-2 text-right text-[13px] text-sand">
+                  <td key={car.id} className="py-3.5 px-2 text-right numerals text-[14px] text-sand">
                     {car.yearStart}–{car.yearEnd ?? "now"}
                   </td>
                 ))}
               </tr>
             </tbody>
           </table>
-        </Card>
+        </div>
       )}
 
       {cars.length === 0 && (
-        <Card>
-          <p className="text-sm text-sand-muted text-center py-8">
-            Add at least 2 cars to compare their values, trends, and market data side by side.
+        <div className="border-y border-surface-border py-12 text-center">
+          <p className="display-serif text-[20px] italic text-sand-muted">
+            Add at least two cars to set their values and trends side by side.
           </p>
-        </Card>
+        </div>
       )}
 
       {cars.length === 1 && (
-        <Card>
-          <p className="text-sm text-sand-muted text-center py-4">
-            Add one more car to start comparing.
-          </p>
-        </Card>
+        <div className="border-y border-surface-border py-8 text-center">
+          <p className="display-serif text-[18px] italic text-sand-muted">Add one more car to start comparing.</p>
+        </div>
       )}
     </div>
   );

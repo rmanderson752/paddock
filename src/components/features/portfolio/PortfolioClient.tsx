@@ -16,7 +16,7 @@ export function PortfolioClient({ items, totalValue, totalInvested }: PortfolioC
   const [showAddModal, setShowAddModal] = useState(false);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PortfolioSummary
         totalValue={totalValue}
         totalInvested={totalInvested}
@@ -24,19 +24,19 @@ export function PortfolioClient({ items, totalValue, totalInvested }: PortfolioC
       />
 
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-sand">Your Cars</h2>
-        <div className="flex gap-2">
+        <h2 className="label-caps text-sand">Your cars</h2>
+        <div className="flex items-center gap-6">
           {items.length > 0 && (
             <a
               href="/api/portfolio/export"
               download
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] rounded-lg border border-surface-border text-sand-muted hover:text-sand hover:bg-surface-hover transition-colors"
+              className="label-caps text-sand-subtle hover:text-sand transition-colors"
             >
               Export CSV
             </a>
           )}
           <Button size="sm" onClick={() => setShowAddModal(true)}>
-            + Add Car
+            Add a car
           </Button>
         </div>
       </div>

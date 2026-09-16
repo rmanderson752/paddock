@@ -16,17 +16,17 @@ export function PriceRangeGrid({ generations: all }: PriceRangeGridProps) {
   });
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 border-t border-l border-surface-border">
       {ranges.map((pr) => (
         <Link
           key={pr.value}
           href={`/browse/price/${pr.value}`}
-          className="rounded-xl border-[0.5px] border-surface-border bg-surface p-3.5 hover:border-surface-border-hover transition-colors"
+          className="group border-r border-b border-surface-border px-4 py-5 hover:bg-surface-hover transition-colors"
         >
-          <div className="text-[14px] font-medium text-gold mb-0.5">
+          <div className="display-serif numerals text-[20px] text-sand group-hover:underline decoration-[0.5px] underline-offset-4">
             {pr.label}
           </div>
-          <div className="text-[11px] text-sand-subtle">
+          <div className="label-caps text-sand-subtle mt-2">
             {pr.count} model{pr.count !== 1 ? "s" : ""}
           </div>
         </Link>

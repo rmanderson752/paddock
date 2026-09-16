@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { sourceLabels } from "@/lib/types";
 import type { WatchlistActivityItem } from "@/lib/alerts";
@@ -12,32 +11,31 @@ interface AlertsFeedProps {
 export function AlertsFeed({ items }: AlertsFeedProps) {
   if (items.length === 0) {
     return (
-      <Card>
-        <p className="text-sm text-sand-muted">No sales recorded yet for the cars you watch.</p>
-      </Card>
+      <div className="border-y border-surface-border py-12 text-center">
+        <p className="display-serif text-[20px] italic text-sand-muted">No sales recorded yet for the cars you watch.</p>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="divide-y divide-surface-border">
-        {items.map((item) => (
+    <ul className="divide-y divide-surface-border border-y border-surface-border">
+      {items.map((item) => (
+        <li key={item.id}>
           <Link
-            key={item.id}
             href={`/car/${item.car.make.slug}/${item.car.model.slug}/${item.car.slug}`}
-            className="flex items-center gap-3 py-2.5 -mx-4 px-4 sm:-mx-5 sm:px-5 hover:bg-surface-hover transition-colors"
+            className="grid grid-cols-[auto_1fr_auto] items-baseline gap-x-5 py-4 group"
           >
-            <div className="w-2 h-2 rounded-full shrink-0 bg-forest-light" />
-            <div className="flex-1 text-[13px] text-sand-muted min-w-0 truncate">
-              <strong className="text-sand font-medium">
+            <div className="label-caps text-sand-faint numerals w-24 whitespace-nowrap">{formatDate(item.saleDate)}</div>
+            <div className="min-w-0 truncate">
+              <span className="display-serif text-[18px] text-sand group-hover:underline decoration-[0.5px] underline-offset-4">
                 {item.car.make.name} {item.car.name}
-              </strong>{" "}
-              sold for {formatPrice(item.salePrice)} on {sourceLabels[item.source] ?? item.source}
+              </span>
+              <span className="label-caps text-sand-faint ml-3">{sourceLabels[item.source] ?? item.source}</span>
             </div>
-            <div className="text-[11px] text-sand-faint shrink-0">{formatDate(item.saleDate)}</div>
+            <div className="display-serif numerals text-[17px] text-sand">{formatPrice(item.salePrice)}</div>
           </Link>
-        ))}
-      </div>
-    </Card>
+        </li>
+      ))}
+    </ul>
   );
 }

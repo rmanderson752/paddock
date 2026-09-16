@@ -1,71 +1,77 @@
 @import "tailwindcss";
 
 /*
-  Paddock palette — sand paper, darker-sand panels, wealthy green accents.
+  Paddock — the collector-car ledger.
 
-  Colors are context-aware: `bg-surface` panels (cards, tiles, inputs,
-  dropdowns) sit a shade darker than the page, and anything painted solid
-  green (`bg-forest`, `bg-forest-dark`) flips its text to cream. `@theme inline`
-  makes utilities resolve the variables at the element, so `text-sand` is dark
-  ink on sand and cream on green.
+  Ivory paper, deep racing green, a whisper of brass in the rules. Type does
+  the work: a Didone serif (Bodoni Moda) for names and prices, a geometric
+  sans (Jost) in small tracked capitals for labels. Hairlines instead of
+  boxes; one accent colour; nothing decorative that isn't a car.
+
+  Colours are context-aware: `bg-surface` plates sit a shade deeper than the
+  page, and solid green surfaces (`bg-forest`) flip their text to ivory.
+  `@theme inline` makes utilities resolve the variables at the element.
 */
 
 :root {
   color-scheme: light;
 
-  /* Sand page context */
-  --page: #eee5d3;
-  --hover: #e6dbc6;
-  --ink: #1a2622;
-  --ink-muted: #4a5753;
-  --ink-subtle: #6a7671;
-  --ink-faint: #97978b;
-  --line: #d6c8ab;
-  --line-hover: #bfae8b;
+  /* Ivory page context */
+  --page: #efe8d9;
+  --hover: #e8e0cd;
+  --ink: #15201b;
+  --ink-muted: #4a554f;
+  --ink-subtle: #6c7670;
+  --ink-faint: #9a9d92;
+  --line: #d3c8ad;
+  --line-hover: #b9ab88;
+  --brass: #b3975c;
   --positive: #1b6a54;
-  --negative: #7c6a56;
-  --gold: #12503f;
-  --tint-positive: rgba(27, 106, 84, 0.14);
-  --tint-negative: rgba(124, 106, 86, 0.16);
+  --negative: #7a6a55;
+  --gold: #0f3d31;
+  --tint-positive: rgba(27, 106, 84, 0.12);
+  --tint-negative: rgba(122, 106, 85, 0.14);
 }
 
-/* Darker-sand panel context */
+/* Deeper-sand plate context */
 .bg-surface,
 .panel {
-  --hover: #dccfb4;
-  --line: #ccbc9b;
-  --line-hover: #b5a27d;
+  --hover: #e0d6c0;
+  --line: #cbbd9e;
+  --line-hover: #ac9b74;
 }
 
-/* Solid green surfaces flip to cream ink */
+/* Solid green surfaces flip to ivory ink */
 .bg-forest,
 .bg-forest-dark {
-  --hover: #17604c;
+  --hover: #14523f;
   --ink: #f3ede1;
-  --ink-muted: #c7d1cb;
-  --ink-subtle: #9fb3aa;
-  --ink-faint: #7e948a;
-  --line: #2a6b57;
-  --line-hover: #3a8069;
+  --ink-muted: #cdd6cf;
+  --ink-subtle: #a3b5ab;
+  --ink-faint: #7f958a;
+  --line: #2a6250;
+  --line-hover: #3c7a64;
+  --brass: #cbb27a;
   --positive: #7fdcb8;
   --negative: #d9c9b2;
-  --gold: #e2be74;
+  --gold: #e2c98a;
   --tint-positive: rgba(127, 220, 184, 0.18);
   --tint-negative: rgba(217, 201, 178, 0.18);
 }
 
 @theme inline {
-  /* Fixed colors */
+  /* Fixed colours */
   --color-cream: #f3ede1;
-  --color-forest: #12503f;
-  --color-forest-dark: #0d3b2f;
-  --color-surface: #e4d9c2;
+  --color-forest: #0f3d31;
+  --color-forest-dark: #0a2d24;
+  --color-surface: #e7dfcb;
 
-  /* Context-aware colors */
+  /* Context-aware colours */
   --color-surface-page: var(--page);
   --color-surface-hover: var(--hover);
   --color-surface-border: var(--line);
   --color-surface-border-hover: var(--line-hover);
+  --color-brass: var(--brass);
 
   --color-sand: var(--ink);
   --color-sand-muted: var(--ink-muted);
@@ -75,35 +81,64 @@
   --color-forest-light: var(--positive);
   --color-forest-muted: var(--tint-positive);
 
-  /* Negative / "down" semantics — a warm taupe, so green stays the only accent */
+  /* "Down" semantics — a warm taupe, so green stays the only accent */
   --color-maroon-light: var(--negative);
   --color-maroon-muted: var(--tint-negative);
 
   --color-gold: var(--gold);
 
-  --font-serif: "DM Serif Display", serif;
-  --font-sans: "DM Sans", sans-serif;
+  --font-serif: var(--font-display), "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --font-sans: var(--font-body), "Jost", "Futura", "Avenir Next", system-ui, sans-serif;
 }
 
 body {
   background: var(--page);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1, "kern" 1;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: #12503f;
+  background: #0f3d31;
   color: #f3ede1;
 }
 
 select option {
-  background: #e4d9c2;
-  color: #1a2622;
+  background: #e7dfcb;
+  color: #15201b;
+}
+
+/* Typographic utilities that recur across the product */
+@utility label-caps {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+@utility display-serif {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  font-variation-settings: "opsz" 72;
+}
+
+@utility numerals {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairline rule with a brass accent — the section signature */
+@utility rule-brass {
+  height: 1px;
+  background: linear-gradient(90deg, var(--brass) 0, var(--brass) 48px, var(--line) 48px);
 }
 
 /* Subtle page fade-in */
 main {
-  animation: fadeIn 200ms ease-out;
+  animation: fadeIn 260ms ease-out;
 }
 
 @keyframes fadeIn {

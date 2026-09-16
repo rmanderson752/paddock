@@ -7,18 +7,19 @@ interface MakeGridProps {
 
 export function MakeGrid({ makes }: MakeGridProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border-t border-l border-surface-border">
       {makes.map(({ make, modelCount, generationCount }) => (
         <Link
           key={make.id}
           href={`/browse/make/${make.slug}`}
-          className="rounded-xl border-[0.5px] border-surface-border bg-surface p-3.5 hover:border-surface-border-hover transition-colors"
+          className="group border-r border-b border-surface-border px-4 py-5 hover:bg-surface-hover transition-colors"
         >
-          <div className="text-[14px] font-medium text-sand mb-0.5">
+          <div className="display-serif text-[20px] text-sand group-hover:underline decoration-[0.5px] underline-offset-4">
             {make.name}
           </div>
-          <div className="text-[11px] text-sand-subtle">
-            {modelCount} model{modelCount !== 1 ? "s" : ""} &middot; {generationCount} variant{generationCount !== 1 ? "s" : ""}
+          <div className="label-caps text-sand-subtle mt-2">
+            {generationCount} model{generationCount !== 1 ? "s" : ""}
+            {modelCount !== generationCount && ` · ${modelCount} line${modelCount !== 1 ? "s" : ""}`}
           </div>
         </Link>
       ))}

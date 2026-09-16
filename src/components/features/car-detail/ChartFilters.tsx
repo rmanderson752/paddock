@@ -39,7 +39,7 @@ function Chip({
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
+        "inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1.5 label-caps transition-colors shrink-0",
         active
           ? "bg-forest text-cream"
           : "border border-surface-border text-sand-subtle hover:border-surface-border-hover hover:text-sand"
@@ -97,10 +97,10 @@ export function ChartFilters({
   const isFiltered = filters.mileage !== "all" || filters.color !== "all" || filters.year !== "all";
 
   return (
-    <div className="rounded-xl border-[0.5px] border-surface-border bg-surface p-4 space-y-3">
+    <div className="py-6 space-y-4 border-b border-surface-border">
       {/* Mileage */}
       <div>
-        <div className="text-[10px] uppercase tracking-[0.5px] text-sand-faint mb-1.5">Mileage</div>
+        <div className="label-caps text-sand-faint mb-2">Mileage</div>
         <div className="flex flex-wrap gap-1.5">
           {mileageBrackets.map((b) => (
             <Chip
@@ -117,7 +117,7 @@ export function ChartFilters({
       {/* Color */}
       {availableColors.length > 1 && (
         <div>
-          <div className="text-[10px] uppercase tracking-[0.5px] text-sand-faint mb-1.5">Color</div>
+          <div className="label-caps text-sand-faint mb-2">Colour</div>
           <div className="flex flex-wrap gap-1.5 sm:overflow-x-auto sm:flex-nowrap">
             <Chip
               active={filters.color === "all"}
@@ -142,7 +142,7 @@ export function ChartFilters({
       {/* Year */}
       {availableYears.length > 1 && (
         <div>
-          <div className="text-[10px] uppercase tracking-[0.5px] text-sand-faint mb-1.5">Year</div>
+          <div className="label-caps text-sand-faint mb-2">Model year</div>
           <div className="flex flex-wrap gap-1.5 sm:overflow-x-auto sm:flex-nowrap">
             <Chip
               active={filters.year === "all"}
@@ -166,14 +166,14 @@ export function ChartFilters({
       {/* Filter indicator */}
       {isFiltered && (
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[11px] text-sand-subtle">
+          <span className="label-caps text-sand-subtle">
             Showing {filteredSales} of {totalSales} sales
           </span>
           <button
             onClick={() => onChange({ mileage: "all", color: "all", year: "all" })}
-            className="text-[11px] text-forest-light hover:text-sand transition-colors"
+            className="label-caps text-forest hover:text-sand transition-colors"
           >
-            Clear filters
+            Clear
           </button>
         </div>
       )}

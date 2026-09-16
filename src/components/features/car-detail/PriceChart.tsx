@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { NavPill } from "@/components/ui/NavPill";
-import { Card } from "@/components/ui/Card";
 import { formatPrice, formatPriceShort, formatDate } from "@/lib/utils";
 import { sourceLabels } from "@/lib/types";
 import { chartColors } from "@/lib/theme";
@@ -58,10 +57,10 @@ function SaleDot(props: Record<string, unknown>) {
     <circle
       cx={cx}
       cy={cy}
-      r={3.5}
-      fill={chartColors.panel}
+      r={3}
+      fill={chartColors.panelDeep}
       stroke={chartColors.positive}
-      strokeWidth={1.5}
+      strokeWidth={1}
     />
   );
 }
@@ -99,9 +98,9 @@ function CustomTooltip({
   const price = entry.price ?? entry.listingPrice ?? 0;
 
   return (
-    <div className="rounded-lg border-[0.5px] border-surface-border bg-forest-dark px-3 py-2 shadow-xl">
-      <div className="text-[11px] text-sand-subtle">{formatDate(entry.date)}</div>
-      <div className="text-[16px] font-serif text-sand">
+    <div className="rounded-[3px] bg-forest-dark px-3.5 py-2.5 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.4)]">
+      <div className="label-caps text-sand-subtle">{formatDate(entry.date)}</div>
+      <div className="display-serif numerals text-[18px] text-sand mt-0.5">
         {formatPrice(price)}
       </div>
       <div className="text-[11px] text-sand-faint mt-0.5">
@@ -192,9 +191,9 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
   const soldCount = data.filter((d) => !d.isListing).length;
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <div className="flex gap-1.5">
+    <div className="pt-8">
+      <div className="flex items-center justify-between mb-6 gap-3">
+        <div className="flex gap-6">
           {timeframes.map((tf) => (
             <NavPill
               key={tf.label}
@@ -207,26 +206,24 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-forest-light" />
-            <span className="text-[10px] text-sand-subtle">
-              Sold{soldCount > 0 && ` · ${soldCount}`}
-            </span>
+        <div className="flex items-center gap-4 label-caps text-sand-subtle">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-forest-light" />
+            Sold{soldCount > 0 && ` · ${soldCount}`}
           </div>
           {hasListings && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rotate-45 bg-gold" />
-              <span className="text-[10px] text-sand-subtle">Listed</span>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rotate-45 bg-gold" />
+              Listed
             </div>
           )}
         </div>
       </div>
 
-      <div className="h-[200px] sm:h-[280px]">
+      <div className="h-[220px] sm:h-[300px] border-y border-surface-border py-4">
         {data.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-sm text-sand-subtle">
-            No completed sales in this period.
+          <div className="h-full flex items-center justify-center label-caps text-sand-subtle">
+            No completed sales in this period
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -242,7 +239,7 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
                   x2="0"
                   y2="1"
                 >
-                  <stop offset="0%" stopColor={strokeColor} stopOpacity={0.22} />
+                  <stop offset="0%" stopColor={strokeColor} stopOpacity={0.14} />
                   <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -252,7 +249,7 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
                 scale="time"
                 domain={domain}
                 ticks={ticks}
-                tick={{ fill: chartColors.tick, fontSize: 10 }}
+                tick={{ fill: chartColors.tick, fontSize: 10, fontFamily: "var(--font-body)", letterSpacing: "0.08em" }}
                 axisLine={{ stroke: chartColors.axis }}
                 tickLine={false}
                 tickFormatter={(v: number) => {
@@ -261,11 +258,11 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
                 }}
               />
               <YAxis
-                tick={{ fill: chartColors.tick, fontSize: 10 }}
+                tick={{ fill: chartColors.tick, fontSize: 10, fontFamily: "var(--font-body)", letterSpacing: "0.04em" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v: number) => formatPriceShort(v)}
-                width={55}
+                width={52}
                 domain={["auto", "auto"]}
               />
               <Tooltip
@@ -276,7 +273,7 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
                 type="monotone"
                 dataKey="price"
                 stroke={strokeColor}
-                strokeWidth={1.5}
+                strokeWidth={1.25}
                 fill={`url(#cg-${gradientId})`}
                 dot={<SaleDot />}
                 activeDot={{
@@ -299,9 +296,9 @@ export function PriceChart({ stats, allSales: propAllSales, activeListings, filt
         )}
       </div>
 
-      <div className="mt-2 text-right text-[10px] text-sand-faint">
+      <div className="mt-3 text-right label-caps text-sand-faint">
         Data through {formatDate(asOf)}
       </div>
-    </Card>
+    </div>
   );
 }

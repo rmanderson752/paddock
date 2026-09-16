@@ -1,5 +1,5 @@
+import Link from "next/link";
 import { HeaderServer } from "@/components/layout/HeaderServer";
-import { LogoMark } from "@/components/ui/Logo";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Footer } from "@/components/layout/Footer";
 import { TopMovers } from "@/components/features/dashboard/TopMovers";
@@ -7,6 +7,7 @@ import { RecentlySold } from "@/components/features/dashboard/RecentlySold";
 import { MarketIndices } from "@/components/features/dashboard/MarketIndices";
 import { CategoryGrid } from "@/components/features/search/CategoryGrid";
 import { SearchDropdown } from "@/components/features/search/SearchDropdown";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 import {
   getTopMovers,
   getRecentSales,
@@ -20,55 +21,67 @@ export default async function HomePage() {
   const [gainers, losers, recentSales, categoryIndices, categorySeries, asOf] = await Promise.all([
     getTopMovers("gainers", 6),
     getTopMovers("losers", 6),
-    getRecentSales(10),
+    getRecentSales(8),
     getCategoryIndices(),
     getCategoryMonthlySeries(),
     getDataAsOfDate(),
   ]);
 
+  const tracked = categoryIndices.reduce((n, c) => n + c.modelCount, 0);
+
   return (
     <>
       <HeaderServer />
-      <main className="mx-auto max-w-6xl px-4 pb-24 sm:pb-6">
-        {/* Hero */}
-        <section className="flex flex-col items-center text-center py-12 sm:py-16">
-          <LogoMark size={40} className="mb-4" />
-          <h1 className="font-serif text-3xl sm:text-4xl text-sand mb-2">Paddock</h1>
-          <p className="text-sand-muted text-sm sm:text-base mb-1">
-            Track the value of collector cars.
+      <main className="mx-auto max-w-6xl px-5 sm:px-6 pb-24 sm:pb-6">
+        {/* Hero — an editorial opening, not a dashboard header */}
+        <section className="pt-16 pb-14 sm:pt-24 sm:pb-20 border-b border-surface-border">
+          <p className="label-caps text-brass mb-6">The collector-car ledger</p>
+          <h1 className="display-serif text-[40px] sm:text-[60px] text-sand max-w-4xl">
+            From the poster on your wall to the keys in your hand.
+          </h1>
+          <p className="mt-6 max-w-xl text-[15px] sm:text-[16px] leading-relaxed text-sand-muted">
+            Follow the cars you&apos;ve always wanted, know what they&apos;re really worth, and watch
+            the ones you own like a portfolio — {tracked} collector cars, priced by real auction results.
           </p>
-          <p className="text-[11px] text-sand-faint mb-6">
-            Real auction results · data through {formatDate(asOf)}
-          </p>
-          <div className="w-full max-w-md">
+          <div className="mt-10 max-w-md md:hidden">
             <SearchDropdown />
+          </div>
+          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3">
+            <Link
+              href="/browse"
+              className="label-caps rounded-[3px] bg-forest px-6 py-3 text-cream hover:bg-forest-dark transition-colors"
+            >
+              Browse the market
+            </Link>
+            <span className="label-caps text-sand-faint">Sale data through {formatDate(asOf)}</span>
           </div>
         </section>
 
-        {/* Browse by Category */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-sand mb-3">Browse by Category</h2>
+        {/* Indices */}
+        <section className="pt-14">
+          <SectionTitle aside="Median tracked value by category · quarterly change">Market indices</SectionTitle>
+          <MarketIndices indices={categoryIndices} series={categorySeries} />
+        </section>
+
+        {/* Categories */}
+        <section className="pt-16">
+          <SectionTitle aside={<Link href="/browse" className="hover:text-sand transition-colors">All of the market →</Link>}>
+            Browse by category
+          </SectionTitle>
           <CategoryGrid indices={categoryIndices} />
         </section>
 
-        {/* Top Movers + Recently Sold */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+        {/* Movers + Recently sold */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-x-14 gap-y-16 pt-16">
           <section>
-            <h2 className="text-sm font-medium text-sand mb-3">Top Movers</h2>
+            <SectionTitle aside="Twelve-month trend">Movers</SectionTitle>
             <TopMovers gainers={gainers} losers={losers} />
           </section>
-
           <section>
-            <h2 className="text-sm font-medium text-sand mb-3">Recently Sold</h2>
+            <SectionTitle aside="Latest completed auctions">Recently sold</SectionTitle>
             <RecentlySold sales={recentSales} />
           </section>
         </div>
-
-        {/* Market Indices */}
-        <section className="mb-8">
-          <h2 className="text-sm font-medium text-sand mb-3">Market Indices</h2>
-          <MarketIndices indices={categoryIndices} series={categorySeries} />
-        </section>
       </main>
       <Footer />
       <MobileNav />

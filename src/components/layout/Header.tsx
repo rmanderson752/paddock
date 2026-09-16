@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoMark } from "@/components/ui/Logo";
+import { Wordmark } from "@/components/ui/Logo";
 import { SearchDropdown } from "@/components/features/search/SearchDropdown";
 import { UserMenu } from "@/components/features/auth/UserMenu";
 import { cn } from "@/lib/utils";
@@ -19,29 +19,31 @@ const navItems = [
   { href: "/alerts", label: "Alerts" },
 ];
 
+// A quiet masthead: wordmark, tracked-capital navigation, hairline underneath.
 export function Header({ user }: HeaderProps) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b-[0.5px] border-surface-border bg-surface-page/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 sm:gap-6 px-4">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <LogoMark size={22} />
-          <span className="font-serif text-xl text-sand">Paddock</span>
+    <header className="sticky top-0 z-50 border-b border-surface-border bg-surface-page/90 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5 sm:px-6">
+        <Link href="/" className="shrink-0">
+          <Wordmark />
         </Link>
 
-        <div className="hidden sm:block flex-1 max-w-md">
+        <div className="hidden md:block flex-1 max-w-sm">
           <SearchDropdown />
         </div>
 
-        <nav className="hidden sm:flex items-center gap-4 ml-auto">
+        <nav className="hidden sm:flex items-center gap-7 ml-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "text-sm transition-colors hover:text-sand",
-                pathname.startsWith(item.href) ? "text-sand font-medium" : "text-sand-subtle"
+                "label-caps pb-0.5 border-b transition-colors duration-200",
+                pathname.startsWith(item.href)
+                  ? "border-sand text-sand"
+                  : "border-transparent text-sand-subtle hover:text-sand"
               )}
             >
               {item.label}
@@ -52,7 +54,7 @@ export function Header({ user }: HeaderProps) {
           ) : (
             <Link
               href="/login"
-              className="rounded-full bg-forest px-3.5 py-1.5 text-sm font-medium text-cream hover:bg-forest-dark transition-colors"
+              className="label-caps rounded-[3px] bg-forest px-4 py-2.5 text-cream hover:bg-forest-dark transition-colors"
             >
               Sign in
             </Link>
@@ -66,7 +68,7 @@ export function Header({ user }: HeaderProps) {
           ) : (
             <Link
               href="/login"
-              className="rounded-full bg-forest px-3 py-1.5 text-[12px] font-medium text-cream hover:bg-forest-dark transition-colors"
+              className="label-caps rounded-[3px] bg-forest px-3.5 py-2 text-cream hover:bg-forest-dark transition-colors"
             >
               Sign in
             </Link>

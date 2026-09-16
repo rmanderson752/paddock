@@ -16,30 +16,29 @@ export function PortfolioSummary({
   const gainPct = totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div className="rounded-xl bg-surface p-4">
-        <div className="text-[11px] uppercase tracking-[0.5px] text-sand-subtle mb-1">
-          Portfolio Value
-        </div>
-        <div className="text-2xl font-medium text-gold">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-10 gap-y-6 border-b border-surface-border pb-8">
+      <div>
+        <div className="label-caps text-sand-subtle mb-2">Market value</div>
+        <div className="display-serif numerals text-[40px] text-sand leading-none">
           {formatPrice(totalValue)}
         </div>
-        <div className="mt-1 flex items-center gap-1.5">
-          <TrendIndicator value={gainPct} className="text-[13px]" />
-          <span className="text-[12px] text-sand-subtle">
-            ({formatPrice(Math.abs(gainLoss))})
-          </span>
-        </div>
       </div>
-      <div className="rounded-xl bg-surface p-4">
-        <div className="text-[11px] uppercase tracking-[0.5px] text-sand-subtle mb-1">
-          Total Invested
-        </div>
-        <div className="text-2xl font-medium text-sand">
+      <div>
+        <div className="label-caps text-sand-subtle mb-2">Invested</div>
+        <div className="display-serif numerals text-[40px] text-sand-muted leading-none">
           {formatPrice(totalInvested)}
         </div>
-        <div className="text-[12px] text-sand-subtle mt-1">
-          {vehicleCount} vehicle{vehicleCount !== 1 ? "s" : ""}
+      </div>
+      <div>
+        <div className="label-caps text-sand-subtle mb-2">Unrealised</div>
+        <div className={`display-serif numerals text-[40px] leading-none ${gainLoss >= 0 ? "text-forest" : "text-maroon-light"}`}>
+          {gainLoss >= 0 ? "+" : "−"}{formatPrice(Math.abs(gainLoss))}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <TrendIndicator value={gainPct} />
+          <span className="label-caps text-sand-faint">
+            {vehicleCount} vehicle{vehicleCount !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
     </div>
