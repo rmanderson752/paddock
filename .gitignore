@@ -44,3 +44,7 @@ data/
 
 # local Claude Code settings
 .claude/settings.local.json
+
+# extraction eval — per-case model outputs are large and regenerable; the summary JSON is committed
+evals/**/results/predictions-*.jsonl
+evals/**/cases/draft-*.jsonl

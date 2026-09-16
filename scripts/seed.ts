@@ -32,7 +32,7 @@ if (isLocalFile) {
 const uuid = () => crypto.randomUUID();
 
 const TABLES = [
-  "generations_fts", "refresh_runs", "price_alerts", "portfolio_items", "watchlist_items",
+  "generations_fts", "sale_details", "sale_listings", "refresh_runs", "price_alerts", "portfolio_items", "watchlist_items",
   "users", "category_indices", "generation_stats", "sales", "generations", "models", "makes",
 ];
 
@@ -177,17 +177,51 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_refresh_runs_started ON refresh_runs(started_at);
 
-  CREATE TABLE IF NOT EXISTS refresh_runs (
-    id TEXT PRIMARY KEY,
-    trigger TEXT NOT NULL,
-    started_at TEXT NOT NULL,
-    finished_at TEXT,
-    status TEXT NOT NULL,
-    sales_inserted INTEGER,
-    pages_fetched INTEGER,
-    message TEXT
+  CREATE TABLE IF NOT EXISTS sale_listings (
+    sale_id TEXT PRIMARY KEY REFERENCES sales(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    essentials TEXT,
+    description TEXT,
+    vin TEXT,
+    lot_number TEXT,
+    seller_type TEXT,
+    location TEXT,
+    text_source TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    fetched_at TEXT NOT NULL
   );
-  CREATE INDEX IF NOT EXISTS idx_refresh_runs_started ON refresh_runs(started_at);
+
+  CREATE TABLE IF NOT EXISTS sale_details (
+    sale_id TEXT PRIMARY KEY REFERENCES sales(id) ON DELETE CASCADE,
+    mileage INTEGER,
+    mileage_unit TEXT,
+    mileage_tmu INTEGER NOT NULL DEFAULT 0,
+    exterior_color TEXT,
+    color_family TEXT,
+    interior_color TEXT,
+    transmission TEXT,
+    transmission_detail TEXT,
+    engine TEXT,
+    owners INTEGER,
+    years_owned INTEGER,
+    title_status TEXT,
+    flags TEXT NOT NULL,
+    modifications TEXT NOT NULL,
+    notable_options TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    model TEXT NOT NULL,
+    prompt_version TEXT NOT NULL,
+    input_hash TEXT NOT NULL,
+    raw_json TEXT NOT NULL,
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    cache_read_tokens INTEGER,
+    cache_write_tokens INTEGER,
+    cost_usd REAL,
+    latency_ms INTEGER,
+    extracted_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_sale_details_model ON sale_details(model, prompt_version);
 `;
 
 // =============================================

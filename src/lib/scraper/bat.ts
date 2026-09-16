@@ -10,6 +10,7 @@
  */
 
 import { client, batchWrite, dbReady } from "../db";
+import { saveExcerptListings } from "../listings";
 import type { InStatement } from "@libsql/client";
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -150,6 +151,21 @@ function extractMileageFromExcerpt(text: string): number | null {
   return null;
 }
 
+/**
+ * The model page's excerpt is the write-up cut at ~350 characters, usually
+ * mid-word. Keep every complete sentence; if there isn't one, cut at a word.
+ * This is the placeholder shown until the extraction pipeline writes its
+ * summary over it.
+ */
+export function excerptToNotes(excerpt: string): string | null {
+  const text = excerpt.replace(/\s+/g, " ").trim();
+  if (text.length < 20) return null;
+  const lastSentenceEnd = Math.max(text.lastIndexOf(". "), text.endsWith(".") ? text.length - 1 : -1);
+  if (lastSentenceEnd > 40) return text.slice(0, lastSentenceEnd + 1);
+  const cut = text.slice(0, 300);
+  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:]$/, "")}…`;
+}
+
 function isActualCar(title: string): boolean {
   const t = title.toLowerCase();
   const partsKeywords = [
@@ -267,11 +283,7 @@ async function scrapeBaTModelPage(config: CarConfig, log: Logger): Promise<Scrap
     const excerpt = decodeHtmlEntities(entry.excerpt || "");
     const mileage = extractMileageFromTitle(title) || extractMileageFromExcerpt(excerpt);
 
-    let conditionNotes: string | null = null;
-    if (excerpt.length > 20) {
-      const firstSentence = excerpt.match(/^[^.]+\./);
-      if (firstSentence) conditionNotes = firstSentence[0].substring(0, 200);
-    }
+    const conditionNotes = excerptToNotes(excerpt);
 
     sales.push({
       title,
@@ -306,13 +318,15 @@ async function saveSales(generationId: string, sales: ScrapedSale[]): Promise<nu
   const existingUrls = new Set(existing.rows.map((r) => r.source_url).filter(Boolean) as string[]);
 
   const statements: InStatement[] = [];
+  const listings: { saleId: string; title: string; excerpt: string }[] = [];
   for (const sale of sales) {
     if (sale.sourceUrl && existingUrls.has(sale.sourceUrl)) continue;
+    const id = crypto.randomUUID();
     statements.push({
       sql: `INSERT OR IGNORE INTO sales (id, generation_id, sale_price, sale_date, source, source_url, year, mileage, color, condition_notes, is_no_reserve, sold, created_at, updated_at)
             VALUES (?, ?, ?, ?, 'bat', ?, ?, ?, NULL, ?, ?, ?, datetime('now'), datetime('now'))`,
       args: [
-        crypto.randomUUID(),
+        id,
         generationId,
         sale.salePrice,
         sale.saleDate,
@@ -324,8 +338,12 @@ async function saveSales(generationId: string, sales: ScrapedSale[]): Promise<nu
         sale.sold ? 1 : 0,
       ],
     });
+    listings.push({ saleId: id, title: sale.title, excerpt: sale.excerpt });
   }
   await batchWrite(statements);
+  // The excerpt is the extraction input until the listing page is fetched
+  // (lib/listings.fetchMissingListings, run by the refresh job)
+  await saveExcerptListings(listings);
   return statements.length;
 }
 

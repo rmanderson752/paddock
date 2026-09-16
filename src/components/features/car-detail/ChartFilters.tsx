@@ -1,21 +1,33 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { colorFamilySwatch } from "@/lib/types";
 
 export interface FilterState {
   mileage: string;
   color: string;
+  transmission: string;
   year: string;
+}
+
+export interface ColorOption {
+  /** Family key (e.g. "red") or a raw colour name for sales without details */
+  value: string;
+  label: string;
+  count: number;
 }
 
 interface ChartFiltersProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
-  availableColors: string[];
+  availableColors: ColorOption[];
+  availableTransmissions: ("manual" | "automatic")[];
   availableYears: number[];
   totalSales: number;
   filteredSales: number;
 }
+
+const transmissionLabels = { manual: "Manual", automatic: "Automatic" } as const;
 
 const mileageBrackets = [
   { label: "All", value: "all" },
@@ -47,7 +59,7 @@ function Chip({
     >
       {colorDot && (
         <span
-          className="w-2 h-2 rounded-full shrink-0"
+          className="w-2 h-2 rounded-full shrink-0 ring-1 ring-black/10"
           style={{ backgroundColor: colorDot }}
         />
       )}
@@ -56,45 +68,17 @@ function Chip({
   );
 }
 
-// Rough color-to-CSS mapping for chip dots
-const chipColorMap: Record<string, string> = {
-  "Rosso Corsa": "#CC0000", "Guards Red": "#CC0000", "Formula Red": "#CC0000",
-  "Arena Red": "#A52828", "Passion Red": "#CC0000", "Brilliant Red": "#CC0000",
-  "Imola Red": "#CC0000", Red: "#CC0000", "Vintage Red": "#8B0000",
-  "Renaissance Red": "#B22222", "New Formula Red": "#CC0000",
-  "Bayside Blue": "#3366CC", "Midnight Purple III": "#4B0082",
-  "Midnight Purple": "#4B0082", "Montego Blue": "#1A3A5C",
-  "Maritime Blue": "#1A3A5C", "Midnight Blue": "#191970",
-  "Shark Blue": "#4477AA", Blue: "#3366CC", "Rally Blue": "#2244AA",
-  "Sonic Blue Mica": "#2244AA",
-  "Championship White": "#E8E8E0", "Grand Prix White": "#E8E8E0",
-  "Alpine White": "#E8E8E0", White: "#E8E8E0", Bianco: "#E8E8E0",
-  "Glacier White": "#E8E8E0", "Scotia White": "#E8E8E0",
-  "Berlina Black": "#1A1A1A", Black: "#1A1A1A", Nero: "#1A1A1A",
-  "Pyrenees Black": "#1A1A1A", "Carbon Black": "#1A1A1A",
-  "Basalt Black": "#1A1A1A", "Obsidian Black": "#1A1A1A",
-  Silver: "#A0A0A0", "Sonic Silver": "#A0A0A0",
-  "Silverstone Metallic": "#A0A0A0", "Grigio Silverstone": "#A0A0A0",
-  "Titanium Silver": "#A0A0A0", "GT Silver": "#A0A0A0",
-  "Giallo Modena": "#FFD700", "Spa Yellow": "#FFD700",
-  "Speed Yellow": "#FFD700", Giallo: "#FFD700",
-  "Phoenix Yellow": "#FFD700",
-  "Papaya Orange": "#FF6600", Orange: "#FF6600",
-  "Coniston Green": "#2E5B3C", Green: "#2E5B3C",
-  "Python Green": "#556B2F", "Epsom Green": "#4A7A5C",
-  "Ocean Jade": "#3A7A6A", "Brooklands Green": "#2E5B3C",
-  "Amethyst Metallic": "#6B3FA0", "Viola SE30": "#6B3FA0",
-};
-
 export function ChartFilters({
   filters,
   onChange,
   availableColors,
+  availableTransmissions,
   availableYears,
   totalSales,
   filteredSales,
 }: ChartFiltersProps) {
-  const isFiltered = filters.mileage !== "all" || filters.color !== "all" || filters.year !== "all";
+  const isFiltered =
+    filters.mileage !== "all" || filters.color !== "all" || filters.transmission !== "all" || filters.year !== "all";
 
   return (
     <div className="py-6 space-y-4 border-b border-surface-border">
@@ -127,12 +111,37 @@ export function ChartFilters({
             </Chip>
             {availableColors.map((color) => (
               <Chip
-                key={color}
-                active={filters.color === color}
-                onClick={() => onChange({ ...filters, color })}
-                colorDot={chipColorMap[color]}
+                key={color.value}
+                active={filters.color === color.value}
+                onClick={() => onChange({ ...filters, color: color.value })}
+                colorDot={colorFamilySwatch[color.value]}
               >
-                {color}
+                {color.label}
+                <span className="opacity-60 numerals">{color.count}</span>
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gearbox — only once the extraction pipeline has classified both kinds */}
+      {availableTransmissions.length > 1 && (
+        <div>
+          <div className="label-caps text-sand-faint mb-2">Gearbox</div>
+          <div className="flex flex-wrap gap-1.5">
+            <Chip
+              active={filters.transmission === "all"}
+              onClick={() => onChange({ ...filters, transmission: "all" })}
+            >
+              All
+            </Chip>
+            {availableTransmissions.map((t) => (
+              <Chip
+                key={t}
+                active={filters.transmission === t}
+                onClick={() => onChange({ ...filters, transmission: t })}
+              >
+                {transmissionLabels[t]}
               </Chip>
             ))}
           </div>
@@ -170,7 +179,7 @@ export function ChartFilters({
             Showing {filteredSales} of {totalSales} sales
           </span>
           <button
-            onClick={() => onChange({ mileage: "all", color: "all", year: "all" })}
+            onClick={() => onChange({ mileage: "all", color: "all", transmission: "all", year: "all" })}
             className="label-caps text-forest hover:text-sand transition-colors"
           >
             Clear

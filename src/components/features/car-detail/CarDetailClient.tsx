@@ -6,7 +6,7 @@ import { StatsGrid } from "./StatsGrid";
 import { RecentSalesFeed } from "./RecentSalesFeed";
 import { ChartFilters, type FilterState } from "./ChartFilters";
 import { computeStatsFromSales } from "@/lib/stats-core";
-import type { Sale, ActiveListing, GenerationStats } from "@/lib/types";
+import { colorFamilyLabels, type Sale, type ActiveListing, type GenerationStats } from "@/lib/types";
 
 interface CarDetailClientProps {
   generationId: string;
@@ -25,14 +25,22 @@ function filterSales(sales: Sale[], filters: FilterState): Sale[] {
       if (filters.mileage === "60k+" && s.mileage < 60000) return false;
     }
 
-    // Color filter
-    if (filters.color !== "all" && s.color !== filters.color) return false;
+    // Colour filter — by extracted family when the sale has one, else the raw name
+    if (filters.color !== "all" && colorKey(s) !== filters.color) return false;
+
+    // Gearbox filter (only sales with extracted details can match)
+    if (filters.transmission !== "all" && s.details?.transmission !== filters.transmission) return false;
 
     // Year filter
     if (filters.year !== "all" && s.year !== Number(filters.year)) return false;
 
     return true;
   });
+}
+
+/** The value a sale contributes to the colour chips: its family, or its raw colour name. */
+function colorKey(s: Sale): string | null {
+  return s.details?.colorFamily ?? s.color ?? null;
 }
 
 export function CarDetailClient({
@@ -45,12 +53,14 @@ export function CarDetailClient({
   const [filters, setFilters] = useState<FilterState>({
     mileage: "all",
     color: "all",
+    transmission: "all",
     year: "all",
   });
 
   const isFiltered =
     filters.mileage !== "all" ||
     filters.color !== "all" ||
+    filters.transmission !== "all" ||
     filters.year !== "all";
 
   const filteredSales = useMemo(
@@ -65,13 +75,24 @@ export function CarDetailClient({
     return computed ? { generationId, ...computed } : stats;
   }, [generationId, filteredSales, stats, isFiltered, asOf]);
 
-  // Extract unique colors and years for filter chips
+  // Colour chips: families (most common first) once details exist, raw names otherwise
   const availableColors = useMemo(() => {
-    const colors = new Set<string>();
+    const counts = new Map<string, number>();
     allSales.forEach((s) => {
-      if (s.color) colors.add(s.color);
+      const key = colorKey(s);
+      if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
     });
-    return Array.from(colors).sort();
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([value, count]) => ({ value, label: colorFamilyLabels[value] ?? value, count }));
+  }, [allSales]);
+
+  const availableTransmissions = useMemo(() => {
+    const present = new Set<"manual" | "automatic">();
+    allSales.forEach((s) => {
+      if (s.details?.transmission) present.add(s.details.transmission);
+    });
+    return Array.from(present).sort();
   }, [allSales]);
 
   const availableYears = useMemo(() => {
@@ -96,6 +117,7 @@ export function CarDetailClient({
         filters={filters}
         onChange={setFilters}
         availableColors={availableColors}
+        availableTransmissions={availableTransmissions}
         availableYears={availableYears}
         totalSales={allSales.length}
         filteredSales={filteredSales.length}

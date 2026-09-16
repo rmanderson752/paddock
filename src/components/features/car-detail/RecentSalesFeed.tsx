@@ -1,111 +1,38 @@
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { formatPrice, formatDate } from "@/lib/utils";
-import { type Sale, type ActiveListing, sourceLabels } from "@/lib/types";
 
-// Map common car colors to CSS colors
-const colorMap: Record<string, string> = {
-  "Rosso Corsa": "#CC0000",
-  "Guards Red": "#CC0000",
-  "Formula Red": "#CC0000",
-  "Renaissance Red": "#B22222",
-  "Arena Red": "#A52828",
-  "Passion Red": "#CC0000",
-  "Brilliant Red": "#CC0000",
-  "Imola Red": "#CC0000",
-  "New Formula Red": "#CC0000",
-  "Vintage Red": "#8B0000",
-  "Mark IV Red": "#B22222",
-  "Fire Opal Red": "#CC0000",
-  "Rubystone Red": "#9B111E",
-  "Misano Red": "#CC0000",
-  Red: "#CC0000",
-  "Bayside Blue": "#3366CC",
-  "Midnight Purple III": "#4B0082",
-  "Midnight Purple": "#4B0082",
-  "Montego Blue": "#1A3A5C",
-  "Maritime Blue": "#1A3A5C",
-  "Midnight Blue": "#191970",
-  "Blu Tour de France": "#003399",
-  "Blu Swaters": "#003366",
-  "Blu Sirena": "#003366",
-  "Arles Blue": "#3B6D8F",
-  "Heritage Blue": "#3B5D8F",
-  "Shark Blue": "#4477AA",
-  Blue: "#3366CC",
-  "Championship White": "#F5F5F0",
-  "Grand Prix White": "#F5F5F0",
-  "Glacier White": "#F0F0E8",
-  "Alpine White": "#F5F5F0",
-  "Centennial White": "#F5F5F0",
-  "Scotia White": "#F5F5F0",
-  "Wimbledon White": "#F5F5F0",
-  Bianco: "#F5F5F0",
-  White: "#F5F5F0",
-  "Berlina Black": "#1A1A1A",
-  "Pyrenees Black": "#1A1A1A",
-  "Diamond Black": "#1A1A1A",
-  "Carbon Black": "#1A1A1A",
-  "Basalt Black": "#1A1A1A",
-  "Obsidian Black": "#1A1A1A",
-  Nero: "#1A1A1A",
-  Black: "#1A1A1A",
-  Silver: "#A0A0A0",
-  "Sonic Silver": "#A0A0A0",
-  "Silverstone Metallic": "#A0A0A0",
-  "Silver Stone Metallic": "#A0A0A0",
-  "Grigio Silverstone": "#A0A0A0",
-  "Grigio Titanio": "#808080",
-  "Titanium Silver": "#A0A0A0",
-  "Steel Grey": "#808080",
-  "Seal Grey": "#707070",
-  "GT Silver": "#A0A0A0",
-  "Tungsten Grey": "#707070",
-  "Giallo Modena": "#FFD700",
-  "Spa Yellow": "#FFD700",
-  "Speed Yellow": "#FFD700",
-  "Fayence Yellow": "#DAA520",
-  "Phoenix Yellow": "#FFD700",
-  Giallo: "#FFD700",
-  "Lime Gold": "#CCCC00",
-  "Bahama Yellow": "#FFD700",
-  "Sonic Blue Mica": "#2244AA",
-  "Rally Blue": "#2244AA",
-  "Papaya Orange": "#FF6600",
-  Orange: "#FF6600",
-  "Dune Beige": "#C2B280",
-  "Coniston Green": "#2E5B3C",
-  "Beluga Black": "#1A1A1A",
-  "Epsom Green": "#4A7A5C",
-  Green: "#2E5B3C",
-  "Python Green": "#556B2F",
-  "RS Green": "#006400",
-  "Brooklands Green": "#2E5B3C",
-  "Ocean Jade": "#3A7A6A",
-  Olive: "#6B6B3C",
-  "Lachssilber": "#C0B0A0",
-  "AMG Solarbeam Yellow": "#FFD700",
-  "Designo Magno Alanite Grey": "#808080",
-  "Sport Classic Grey": "#808080",
-  "Carrara White": "#F5F5F0",
-  "Sebring Silver": "#A0A0A0",
-  "Cool Silver": "#A0A0A0",
-  "Amethyst Metallic": "#6B3FA0",
-  "Metallic Brown": "#6B4226",
-  "Slate Blue": "#5577AA",
-  "Freeborn Red": "#CC3333",
-  "Sky Blue": "#6699CC",
-  "Viola SE30": "#6B3FA0",
-  "Argento Nürburgring": "#A0A0A0",
-  "BMW Motorsport": "#0066CC",
-  "Dark Silver": "#707070",
-  "Royal Maroon": "#6B1A2A",
-  "Rosso": "#CC0000",
-  "Turquoise": "#30B0B0",
+import { colorFamilySwatch, FLAG_LABELS, type ConditionFlag, type Sale, type ActiveListing, sourceLabels } from "@/lib/types";
+
+// Colour dots come from the extracted colour family; a handful of common
+// names cover sales that haven't been through extraction yet.
+const legacyColorMap: Record<string, string> = {
+  Red: "#b3261e", Blue: "#2f4f8f", White: "#f4f1ea", Black: "#1a1a1a", Silver: "#b8b8b4",
+  Grey: "#7a7d7a", Gray: "#7a7d7a", Yellow: "#e2c02a", Green: "#2f5d43", Orange: "#e0731d",
 };
 
-function getColorDot(colorName: string | null): string | null {
-  if (!colorName) return null;
-  return colorMap[colorName] ?? null;
+function getColorDot(sale: Pick<Sale, "color" | "details">): string | null {
+  if (sale.details?.colorFamily) return colorFamilySwatch[sale.details.colorFamily] ?? null;
+  if (!sale.color) return null;
+  const word = Object.keys(legacyColorMap).find((k) => sale.color!.toLowerCase().includes(k.toLowerCase()));
+  return word ? legacyColorMap[word] : null;
+}
+
+// Flags a buyer weighs; positive ones read green, cautions read taupe
+const cautionFlags = new Set<ConditionFlag>(["accident_history", "rust_or_corrosion", "needs_work", "engine_replaced_or_rebuilt", "repaint"]);
+
+function FlagTag({ flag }: { flag: string }) {
+  const label = FLAG_LABELS[flag as ConditionFlag];
+  if (!label) return null;
+  const caution = cautionFlags.has(flag as ConditionFlag);
+  return (
+    <span
+      className={`label-caps rounded-[2px] px-1.5 py-0.5 ${
+        caution ? "bg-maroon-muted text-maroon-light" : "bg-forest-muted text-forest-light"
+      }`}
+    >
+      {label}
+    </span>
+  );
 }
 
 interface RecentSalesFeedProps {
@@ -123,7 +50,19 @@ export function RecentSalesFeed({ sales, activeListings }: RecentSalesFeedProps)
         <SectionTitle aside={`${sales.length} completed`}>Sale record</SectionTitle>
         <ul className="divide-y divide-surface-border border-b border-surface-border">
           {recentSales.map((sale) => {
-            const dotColor = getColorDot(sale.color);
+            const dotColor = getColorDot(sale);
+            const d = sale.details;
+            const meta = [
+              sale.year ? String(sale.year) : null,
+              sale.mileage ? `${sale.mileage.toLocaleString()} mi${d?.mileageTmu ? " (TMU)" : ""}` : "Mileage not stated",
+              sale.color,
+              d?.transmission === "manual" ? "Manual" : d?.transmission === "automatic" ? "Automatic" : null,
+            ].filter(Boolean);
+            const provenance = [
+              d?.owners === 1 ? "One owner" : d?.owners ? `${d.owners} owners` : null,
+              d?.yearsOwned && d.yearsOwned >= 5 ? `${d.yearsOwned} years owned` : null,
+              d?.titleStatus && d.titleStatus !== "clean" ? `${d.titleStatus} title` : null,
+            ].filter(Boolean);
             return (
               <li key={sale.id} className="grid grid-cols-[auto_1fr_auto] items-start gap-x-5 py-4">
                 <div className="label-caps text-sand-faint numerals w-24 pt-1 whitespace-nowrap">{formatDate(sale.saleDate)}</div>
@@ -136,16 +75,22 @@ export function RecentSalesFeed({ sales, activeListings }: RecentSalesFeedProps)
                         title={sale.color ?? undefined}
                       />
                     )}
-                    <span>
-                      {sale.year ? `${sale.year} · ` : ""}
-                      {sale.mileage ? `${sale.mileage.toLocaleString()} mi` : "Mileage not stated"}
-                      {sale.color && ` · ${sale.color}`}
-                    </span>
+                    <span>{meta.join(" · ")}</span>
                   </div>
-                  <div className="label-caps text-sand-faint mt-1.5">{sourceLabels[sale.source] ?? sale.source}</div>
+                  <div className="label-caps text-sand-faint mt-1.5">
+                    {sourceLabels[sale.source] ?? sale.source}
+                    {provenance.length > 0 && ` · ${provenance.join(" · ")}`}
+                  </div>
                   {sale.conditionNotes && (
                     <div className="text-[12px] leading-relaxed text-sand-subtle mt-1.5 italic max-w-2xl">
                       {sale.conditionNotes}
+                    </div>
+                  )}
+                  {d && d.flags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {d.flags.map((f) => (
+                        <FlagTag key={f} flag={f} />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -164,7 +109,7 @@ export function RecentSalesFeed({ sales, activeListings }: RecentSalesFeedProps)
           <SectionTitle>Currently listed</SectionTitle>
           <div className="divide-y divide-surface-border">
             {activeListings.map((listing) => {
-              const dotColor = getColorDot(listing.color);
+              const dotColor = getColorDot({ color: listing.color, details: null });
               return (
                 <div
                   key={listing.id}

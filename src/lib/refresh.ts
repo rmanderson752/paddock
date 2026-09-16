@@ -1,4 +1,5 @@
 // Server-only — the full database refresh: scrape new Bring a Trailer results,
+// fetch their listing pages, extract structured details with Claude,
 // recompute stats and indices, rebuild the search index. Every run is recorded
 // in `refresh_runs` (shown on the admin dashboard) and appended to
 // data/logs/refresh.log. Runs from the scheduler, the CLI and the admin page.
@@ -7,6 +8,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { client, dbReady, rebuildFtsIndex } from "./db";
 import { scrapeBaT } from "./scraper/bat";
+import { fetchMissingListings } from "./listings";
+import { extractPendingSales } from "./extraction";
 import { refreshAllStats } from "./stats";
 
 export type RefreshTrigger = "scheduler" | "manual" | "cli";
@@ -64,6 +67,14 @@ function appendLog(line: string): void {
   }
 }
 
+// Per-run caps and time budgets: the scrape itself takes ~90 s and a Vercel
+// function gets 300 s, so listing pages get about a minute and extraction
+// about two; anything left over is picked up by the next run.
+const REFRESH_LISTING_PAGES = Number(process.env.REFRESH_LISTING_PAGES ?? 25);
+const REFRESH_EXTRACTIONS = Number(process.env.REFRESH_EXTRACTIONS ?? 50);
+const LISTING_TIME_BUDGET_MS = 70_000;
+const EXTRACTION_TIME_BUDGET_MS = 110_000;
+
 let inFlight: Promise<RefreshRun> | null = null;
 
 /** True while a refresh is running in this process. */
@@ -102,13 +113,23 @@ async function runRefresh({ trigger, log }: RefreshOptions): Promise<RefreshRun>
     const scrape = await scrapeBaT({ log: emit });
     emit(`scrape complete: ${scrape.pagesFetched} pages, ${scrape.totalMatched} matched, ${scrape.totalInserted} new sales`);
 
+    // Listing pages and extraction are bounded per run so a refresh stays
+    // within a serverless timeout; anything left over is picked up next time.
+    const listings = await fetchMissingListings({ limit: REFRESH_LISTING_PAGES, timeBudgetMs: LISTING_TIME_BUDGET_MS, log: emit });
+    emit(`listing pages: ${listings.fetched} fetched, ${listings.failed} failed, ${listings.remaining} still pending`);
+
+    const extraction = await extractPendingSales({ limit: REFRESH_EXTRACTIONS, timeBudgetMs: EXTRACTION_TIME_BUDGET_MS, log: emit });
+    if (extraction.skippedReason) emit(`extraction skipped: ${extraction.skippedReason}`);
+    else emit(`extraction: ${extraction.extracted} extracted, ${extraction.failed} failed, $${extraction.costUsd.toFixed(3)}`);
+
     const stats = await refreshAllStats();
     emit(`stats refreshed as of ${stats.asOf}: ${stats.generationsUpdated} generations, ${stats.categories} categories`);
 
     await rebuildFtsIndex();
     emit("search index rebuilt");
 
-    const message = `${scrape.totalInserted} new sale${scrape.totalInserted === 1 ? "" : "s"} · data through ${stats.asOf}`;
+    const extractedNote = extraction.extracted > 0 ? ` · ${extraction.extracted} extracted` : "";
+    const message = `${scrape.totalInserted} new sale${scrape.totalInserted === 1 ? "" : "s"}${extractedNote} · data through ${stats.asOf}`;
     const finishedAt = new Date().toISOString();
     await client.execute({
       sql: "UPDATE refresh_runs SET finished_at = ?, status = 'ok', sales_inserted = ?, pages_fetched = ?, message = ? WHERE id = ?",

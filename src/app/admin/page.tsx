@@ -12,6 +12,8 @@ import * as schema from "@/lib/db/schema";
 import { AdminActions } from "@/components/features/admin/AdminActions";
 import { getDataAsOfDate } from "@/lib/data";
 import { getRecentRefreshRuns } from "@/lib/refresh";
+import { getListingCoverage } from "@/lib/listings";
+import { getExtractionCoverage, isConfigured as isExtractionConfigured, resolveModel, PROMPT_VERSION } from "@/lib/extraction";
 import { DEFAULT_SCHEDULE, describeSchedule, parseSchedule, nextRunAt } from "@/lib/scheduler";
 import { formatDate } from "@/lib/utils";
 
@@ -28,7 +30,7 @@ export default async function AdminPage() {
   if (!session) redirect("/login?redirect=/admin");
   if (!(await isAdmin(session))) redirect("/");
 
-  const [asOf, refreshRuns, counts, zeroSalesGens, recentSales] = await Promise.all([
+  const [asOf, refreshRuns, counts, zeroSalesGens, recentSales, listingCoverage, extraction] = await Promise.all([
     getDataAsOfDate(),
     getRecentRefreshRuns(8),
     // One round trip for every headline count
@@ -67,6 +69,8 @@ export default async function AdminPage() {
       .orderBy(sql`${schema.sales.saleDate} DESC`)
       .limit(5)
       .all(),
+    getListingCoverage(),
+    getExtractionCoverage(),
   ]);
   const n = (v: number | undefined) => Number(v ?? 0);
   const makeCount = n(counts?.makes);
@@ -78,6 +82,11 @@ export default async function AdminPage() {
   const watchlistCount = n(counts?.watchlist);
   const portfolioCount = n(counts?.portfolio);
   const alertCount = n(counts?.alerts);
+
+  const extractionModel = resolveModel();
+  const extractionOn = isExtractionConfigured();
+  const currentPromptRows = extraction.byModel.filter((m) => m.model === extractionModel && m.promptVersion === PROMPT_VERSION);
+  const extractedCurrent = currentPromptRows.reduce((a, m) => a + m.count, 0);
 
   const scheduleSpec = process.env.REFRESH_SCHEDULE || DEFAULT_SCHEDULE;
   const schedule = parseSchedule(scheduleSpec);
@@ -119,6 +128,60 @@ export default async function AdminPage() {
         {/* Actions */}
         <h2 className="label-caps text-sand mb-4">Actions</h2>
         <AdminActions />
+
+        {/* Extraction pipeline */}
+        <div className="mt-8">
+          <h2 className="label-caps text-sand mb-4">Listing extraction</h2>
+          <Card>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              <div>
+                <div className="label-caps text-sand-subtle">Listing pages</div>
+                <div className="display-serif numerals text-[22px] text-sand mt-1">
+                  {listingCoverage.withListingPage.toLocaleString()}
+                  <span className="text-[13px] text-sand-faint"> / {listingCoverage.batSales.toLocaleString()}</span>
+                </div>
+                <div className="text-[11px] text-sand-faint mt-0.5">
+                  {listingCoverage.withExcerptOnly > 0 ? `${listingCoverage.withExcerptOnly} excerpt-only` : "full text stored"}
+                </div>
+              </div>
+              <div>
+                <div className="label-caps text-sand-subtle">Extracted</div>
+                <div className="display-serif numerals text-[22px] text-sand mt-1">
+                  {extractedCurrent.toLocaleString()}
+                  <span className="text-[13px] text-sand-faint"> / {listingCoverage.withListingPage.toLocaleString()}</span>
+                </div>
+                <div className="text-[11px] text-sand-faint mt-0.5">
+                  {extractionModel} · prompt {PROMPT_VERSION}
+                </div>
+              </div>
+              <div>
+                <div className="label-caps text-sand-subtle">Spend to date</div>
+                <div className="display-serif numerals text-[22px] text-sand mt-1">${extraction.totalCostUsd.toFixed(2)}</div>
+                <div className="text-[11px] text-sand-faint mt-0.5">
+                  {extraction.extracted > 0 ? `$${(extraction.totalCostUsd / extraction.extracted).toFixed(4)} per listing` : "no runs yet"}
+                </div>
+              </div>
+              <div>
+                <div className="label-caps text-sand-subtle">Status</div>
+                <div className={`text-[13px] mt-2 ${extractionOn ? "text-forest-light" : "text-maroon-light"}`}>
+                  {extractionOn ? "API key configured" : "ANTHROPIC_API_KEY not set"}
+                </div>
+                <div className="text-[11px] text-sand-faint mt-0.5">
+                  {extraction.lastExtractedAt ? `last run ${formatStamp(extraction.lastExtractedAt)}` : "runs with each refresh"}
+                </div>
+              </div>
+            </div>
+            {extraction.byModel.length > 1 && (
+              <div className="mt-4 pt-3 border-t border-surface-border text-[11px] text-sand-faint space-x-3">
+                {extraction.byModel.map((m) => (
+                  <span key={`${m.model}-${m.promptVersion}`}>
+                    {m.model} @ {m.promptVersion}: {m.count} rows{m.avgLatencyMs ? `, ${m.avgLatencyMs} ms avg` : ""}
+                  </span>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
 
         {/* Refresh history */}
         <div className="mt-8">

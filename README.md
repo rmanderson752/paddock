@@ -35,7 +35,10 @@ derived tables.
 | `npm run db:seed` | **Recreates** `data/paddock.db` with the reference data in `scripts/seed.ts` (no sales) |
 | `npm run db:scrape` | Scrapes completed BaT auctions for every configured generation, then refreshes stats. Supports `--dry-run` and `--car "e30 m3"` |
 | `npm run db:stats` | Recomputes `generation_stats` and `category_indices` from the `sales` table |
-| `npm run db:refresh` | The full refresh the schedule runs: scrape → stats → search index, recorded in `refresh_runs` and `data/logs/refresh.log` |
+| `npm run db:refresh` | The full refresh the schedule runs: scrape → listing pages → extraction → stats → search index, recorded in `refresh_runs` and `data/logs/refresh.log` |
+| `npm run db:listings` | Backfills the full Bring a Trailer listing page (write-up + "BaT Essentials") for every sale that only has an excerpt. Rate limited, resumable |
+| `npm run db:extract` | Extracts structured details from stored listing text with Claude via the Batch API (`--sync` for the Messages API, `--collect <id>` to finish a batch later) |
+| `npm run eval:extraction` | Runs the extraction eval — per-field accuracy, flag F1, summary faithfulness, cost and latency (see `evals/extraction/README.md`) |
 | `npm run db:export` | Writes `data/paddock-export.db`, a clean copy for `turso db create --from-file` |
 | `npm run schedule:install` / `status` / `uninstall` | macOS launchd agent that runs `db:refresh` every Monday and Thursday at 00:01 |
 | `npm run db:clean` | One-off cleanup of early scraper data (parts listings, mis-filed variants). Idempotent |
@@ -110,17 +113,58 @@ src/
     data.ts            read queries (server only)
     stats-core.ts      pure statistics (shared with client + scripts)
     stats.ts           recompute derived tables (server only)
-    refresh.ts         full refresh job (scrape → stats → search index) + run history
+    refresh.ts         full refresh job (scrape → listings → extraction → stats → search index)
     scheduler.ts       weekly in-process scheduler (started by instrumentation.ts)
-    scraper/bat.ts     Bring a Trailer scraper
+    scraper/bat.ts     Bring a Trailer scraper (model pages)
+    scraper/bat-listing.ts  listing-page parser (description + BaT Essentials)
+    listings.ts        sale_listings store + rate-limited listing-page fetcher
+    extraction/        Claude extraction: schema, prompt, API calls, storage, grader
     alerts.ts          evaluate price alerts against current data
     auth/              sessions (JWT cookie), server actions, admin check
     db/                Drizzle schema + SQLite connection + FTS5 helpers
   proxy.ts             protects /portfolio, /watchlist, /alerts, /profile, /admin
   instrumentation.ts   starts the in-app refresh scheduler when enabled
-scripts/               seed, scrape, clean, refresh-stats, refresh-db, schedule/ (launchd)
-data/                  paddock.db (git-ignored)
+scripts/               seed, scrape, clean, refresh-stats, refresh-db, backfill-listings,
+                       extract-details, schedule/ (launchd)
+evals/extraction/      labelled cases + runner for the extraction pipeline
+data/                  paddock.db, batch state, logs (git-ignored)
 ```
+
+## Listing extraction
+
+Every Bring a Trailer sale is stored with its full listing text (`sale_listings`:
+title, the "BaT Essentials" bullets, the write-up, VIN, lot, seller type), and
+Claude turns that text into a fixed set of buyer-relevant fields
+(`sale_details`): odometer reading and whether it's TMU, exterior colour and
+its family, interior colour, gearbox (manual vs. everything else), engine,
+owners and years owned, title status, a set of condition flags (accident
+history, repaint, engine rebuilt or replaced, rust, modified, track use, needs
+work, service records), modifications, notable options and a one-line
+summary.
+
+- **Contract**: one Zod schema (`src/lib/extraction/schema.ts`) is the
+  structured-output format sent to the API, the validator on the way back and
+  the type the UI and the eval use. `PROMPT_VERSION` is bumped whenever the
+  schema, rules or examples change.
+- **Prompt**: a byte-stable system prompt with the extraction rules and two
+  worked examples, cached with `cache_control`; only the listing goes in the
+  user turn. Rules were tightened against real listings (see the golden set).
+- **Provenance**: every row records the model, prompt version, a hash of the
+  exact input, the raw JSON, token usage, cost and latency. Unchanged inputs
+  are never re-extracted; a new prompt version re-extracts everything.
+- **Paths**: the refresh job extracts new sales synchronously (bounded per run);
+  backfills go through the Batch API at half price (`npm run db:extract`).
+- **Promotion**: mileage (converted to miles), the seller's colour name and the
+  summary are copied onto `sales`, so charts, filters and the sale record
+  improve without knowing the pipeline exists. Colour-family and gearbox
+  filters on the car page come from `sale_details`.
+- **Eval**: `evals/extraction/` holds 25 synthetic cases that pin down the
+  rules and 46 hand-labelled real listings; the runner reports per-field
+  accuracy/precision/recall, flag F1, summary faithfulness checks, cost and
+  p50/p95 latency per model and effort level.
+
+Requires `ANTHROPIC_API_KEY`. `EXTRACTION_MODEL` (default `claude-opus-5`)
+and `EXTRACTION_EFFORT` pick the model and effort level.
 
 ## Design
 
@@ -145,6 +189,9 @@ colours live in `src/lib/theme.ts`.
 | `DATABASE_PATH` | Local SQLite file, defaults to `./data/paddock.db` |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Production database on Turso; the URL overrides `DATABASE_PATH` |
 | `CRON_SECRET` | Protects `/api/cron/refresh` (required on Vercel) |
+| `ANTHROPIC_API_KEY` | Enables listing extraction (refresh job, admin button, `db:extract`, the eval) |
+| `EXTRACTION_MODEL` / `EXTRACTION_EFFORT` | Default `claude-opus-5`; effort `low`–`max` (model default when unset) |
+| `REFRESH_LISTING_PAGES` / `REFRESH_EXTRACTIONS` | Per-refresh caps, default 25 pages and 50 extractions |
 | `REFRESH_SCHEDULE_ENABLED` | `true` to run the refresh schedule inside a long-running Next.js server |
 | `REFRESH_SCHEDULE` | Defaults to `mon 00:01, thu 00:01` (server local time) |
 

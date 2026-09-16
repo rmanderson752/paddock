@@ -23,6 +23,14 @@ const actions: AdminAction[] = [
     busyLabel: "Refreshing… (≈2 min)",
   },
   {
+    key: "extract",
+    title: "Extract listing details",
+    description: "Fetches up to 25 missing Bring a Trailer listing pages, then has Claude extract structured details for up to 50 sales that don't have them yet. Runs automatically as part of every refresh.",
+    endpoint: "/api/admin/extract-details",
+    label: "Extract pending",
+    busyLabel: "Extracting… (≈1–2 min)",
+  },
+  {
     key: "stats",
     title: "Recompute stats & indices",
     description: "Rebuilds generation stats and category indices from the sales table",

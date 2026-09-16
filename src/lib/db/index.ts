@@ -37,6 +37,72 @@ export function dbReady(): Promise<void> {
   return ready;
 }
 
+// Tables added after the first seed are created lazily, once per process, so
+// an older database keeps working without a migration step. Cheap: one
+// batched DDL round trip on the first query that needs them.
+const AUX_TABLES_SQL = [
+  `CREATE TABLE IF NOT EXISTS sale_listings (
+    sale_id TEXT PRIMARY KEY REFERENCES sales(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    essentials TEXT,
+    description TEXT,
+    vin TEXT,
+    lot_number TEXT,
+    seller_type TEXT,
+    location TEXT,
+    text_source TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    fetched_at TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS sale_details (
+    sale_id TEXT PRIMARY KEY REFERENCES sales(id) ON DELETE CASCADE,
+    mileage INTEGER,
+    mileage_unit TEXT,
+    mileage_tmu INTEGER NOT NULL DEFAULT 0,
+    exterior_color TEXT,
+    color_family TEXT,
+    interior_color TEXT,
+    transmission TEXT,
+    transmission_detail TEXT,
+    engine TEXT,
+    owners INTEGER,
+    years_owned INTEGER,
+    title_status TEXT,
+    flags TEXT NOT NULL,
+    modifications TEXT NOT NULL,
+    notable_options TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    model TEXT NOT NULL,
+    prompt_version TEXT NOT NULL,
+    input_hash TEXT NOT NULL,
+    raw_json TEXT NOT NULL,
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    cache_read_tokens INTEGER,
+    cache_write_tokens INTEGER,
+    cost_usd REAL,
+    latency_ms INTEGER,
+    extracted_at TEXT NOT NULL
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_sale_details_model ON sale_details(model, prompt_version)",
+];
+
+let auxTablesReady: Promise<void> | null = null;
+
+/** Resolves once `sale_listings` and `sale_details` exist (created on first use). */
+export function ensureAuxTables(): Promise<void> {
+  if (!auxTablesReady) {
+    auxTablesReady = ready
+      .then(() => client.batch(AUX_TABLES_SQL, "write"))
+      .then(() => undefined)
+      .catch((err) => {
+        auxTablesReady = null; // let the next caller retry
+        throw err;
+      });
+  }
+  return auxTablesReady;
+}
+
 /** Run several write statements in one transaction / round trip. */
 export async function batchWrite(statements: InStatement[]): Promise<void> {
   if (statements.length === 0) return;

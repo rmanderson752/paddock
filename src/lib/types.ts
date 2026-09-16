@@ -42,6 +42,23 @@ export interface Sale {
   color: string | null;
   conditionNotes: string | null;
   sold: boolean;
+  /** Structured details extracted from the listing text (see lib/extraction); null until extracted */
+  details: SaleDetails | null;
+}
+
+// The subset of an extraction the UI reads. Colour and mileage are promoted
+// onto the sale itself; these are the fields with no other home.
+export interface SaleDetails {
+  colorFamily: string | null;
+  mileageTmu: boolean;
+  transmission: "manual" | "automatic" | null;
+  transmissionDetail: string | null;
+  engine: string | null;
+  owners: number | null;
+  yearsOwned: number | null;
+  titleStatus: string | null;
+  flags: string[];
+  summary: string;
 }
 
 export interface ActiveListing {
@@ -121,6 +138,52 @@ export const sourceShortLabels: Record<string, string> = {
   dupont_registry: "duPont",
   hemmings: "Hemmings",
   pcarmarket: "PCARMARKET",
+};
+
+// Condition flags the extraction pipeline can set (see lib/extraction/schema)
+export const CONDITION_FLAGS = [
+  "accident_history",
+  "repaint",
+  "engine_replaced_or_rebuilt",
+  "rust_or_corrosion",
+  "modified",
+  "track_use",
+  "needs_work",
+  "service_records",
+] as const;
+export type ConditionFlag = (typeof CONDITION_FLAGS)[number];
+
+export const FLAG_LABELS: Record<ConditionFlag, string> = {
+  accident_history: "Accident history",
+  repaint: "Repainted",
+  engine_replaced_or_rebuilt: "Engine rebuilt or replaced",
+  rust_or_corrosion: "Rust noted",
+  modified: "Modified",
+  track_use: "Track use",
+  needs_work: "Needs work",
+  service_records: "Service records",
+};
+
+/** Swatch colours for the extracted colour families, on ivory plates */
+export const colorFamilySwatch: Record<string, string> = {
+  red: "#b3261e",
+  blue: "#2f4f8f",
+  white: "#f4f1ea",
+  black: "#1a1a1a",
+  silver: "#b8b8b4",
+  grey: "#7a7d7a",
+  yellow: "#e2c02a",
+  green: "#2f5d43",
+  orange: "#e0731d",
+  brown: "#7a5636",
+  purple: "#5c3d8f",
+  gold: "#c2a14d",
+  other: "#a89f8c",
+};
+
+export const colorFamilyLabels: Record<string, string> = {
+  red: "Red", blue: "Blue", white: "White", black: "Black", silver: "Silver", grey: "Grey", yellow: "Yellow",
+  green: "Green", orange: "Orange", brown: "Brown", purple: "Purple", gold: "Gold", other: "Other",
 };
 
 export type PriceRange = "under50k" | "50k-100k" | "100k-250k" | "250k-500k" | "500k-1m" | "over1m";

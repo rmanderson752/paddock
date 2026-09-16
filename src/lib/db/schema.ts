@@ -67,6 +67,59 @@ export const sales = sqliteTable("sales", {
   dateIdx: index("idx_sales_date").on(table.saleDate),
 }));
 
+// Raw listing text captured from the source page — the input to the
+// extraction pipeline. Kept apart from `sales` so the hot sale queries stay
+// lean; one row per sale, replaced when the page is re-fetched.
+export const saleListings = sqliteTable("sale_listings", {
+  saleId: text("sale_id").primaryKey().references(() => sales.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  essentials: text("essentials"),       // JSON array of "BaT Essentials" bullets (null until the page is fetched)
+  description: text("description"),     // listing body, or the model-page excerpt until the page is fetched
+  vin: text("vin"),
+  lotNumber: text("lot_number"),
+  sellerType: text("seller_type"),      // 'private_party' | 'dealer'
+  location: text("location"),
+  textSource: text("text_source").notNull(), // 'listing_page' | 'excerpt'
+  contentHash: text("content_hash").notNull(),
+  fetchedAt: text("fetched_at").notNull(),
+});
+
+// Structured details extracted from the listing text by Claude (see
+// lib/extraction). Every row carries the model, prompt version and input hash
+// that produced it, so any value can be traced or re-run.
+export const saleDetails = sqliteTable("sale_details", {
+  saleId: text("sale_id").primaryKey().references(() => sales.id, { onDelete: "cascade" }),
+  mileage: integer("mileage"),
+  mileageUnit: text("mileage_unit"),    // 'mi' | 'km'
+  mileageTmu: integer("mileage_tmu", { mode: "boolean" }).notNull().default(false),
+  exteriorColor: text("exterior_color"),
+  colorFamily: text("color_family"),
+  interiorColor: text("interior_color"),
+  transmission: text("transmission"),   // 'manual' | 'automatic'
+  transmissionDetail: text("transmission_detail"),
+  engine: text("engine"),
+  owners: integer("owners"),
+  yearsOwned: integer("years_owned"),
+  titleStatus: text("title_status"),    // 'clean' | 'salvage' | 'rebuilt' | 'other'
+  flags: text("flags").notNull(),       // JSON array of ConditionFlag
+  modifications: text("modifications").notNull(), // JSON array
+  notableOptions: text("notable_options").notNull(), // JSON array
+  summary: text("summary").notNull(),
+  model: text("model").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  inputHash: text("input_hash").notNull(),
+  rawJson: text("raw_json").notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  cacheReadTokens: integer("cache_read_tokens"),
+  cacheWriteTokens: integer("cache_write_tokens"),
+  costUsd: real("cost_usd"),
+  latencyMs: integer("latency_ms"),
+  extractedAt: text("extracted_at").notNull(),
+}, (table) => ({
+  modelIdx: index("idx_sale_details_model").on(table.model, table.promptVersion),
+}));
+
 // Precomputed stats (refreshed by seed script or future cron)
 export const generationStats = sqliteTable("generation_stats", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

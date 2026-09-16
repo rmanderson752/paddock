@@ -4,11 +4,11 @@
 // Every query is a network round trip on Turso, so list pages fetch in one
 // JOIN and per-id lookups are batched with inArray rather than looped.
 
-import { db, searchFts, dbReady } from "./db";
+import { db, searchFts, dbReady, ensureAuxTables } from "./db";
 import { eq, desc, sql, like, or, and, gte, lte, asc, inArray } from "drizzle-orm";
 import * as schema from "./db/schema";
 import type {
-  Make, Model, Sale, ActiveListing,
+  Make, Model, Sale, SaleDetails, ActiveListing,
   GenerationStats, CategoryIndex, GenerationWithDetails, MakeWithCount,
   PriceRange, Era,
 } from "./types";
@@ -122,7 +122,7 @@ export async function getSalesForGeneration(
   timeframe?: string,
   asOf?: string
 ): Promise<Sale[]> {
-  await dbReady();
+  await ensureAuxTables();
   const conditions = [eq(schema.sales.generationId, generationId), eq(schema.sales.sold, true)];
 
   const years: Record<string, number> = { "1y": 1, "3y": 3, "5y": 5 };
@@ -131,15 +131,44 @@ export async function getSalesForGeneration(
     conditions.push(gte(schema.sales.saleDate, shiftIsoDate(end, { years: -years[timeframe] })));
   }
 
-  const rows = await db.select().from(schema.sales)
+  const rows = await db
+    .select({ sale: schema.sales, details: schema.saleDetails })
+    .from(schema.sales)
+    .leftJoin(schema.saleDetails, eq(schema.saleDetails.saleId, schema.sales.id))
     .where(and(...conditions))
     .orderBy(schema.sales.saleDate)
     .all();
 
-  return rows.map(rowToSale);
+  return rows.map((r) => rowToSale(r.sale, r.details));
 }
 
-function rowToSale(row: typeof schema.sales.$inferSelect): Sale {
+function parseJsonList(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function rowToDetails(row: typeof schema.saleDetails.$inferSelect | null | undefined): SaleDetails | null {
+  if (!row) return null;
+  return {
+    colorFamily: row.colorFamily ?? null,
+    mileageTmu: row.mileageTmu ?? false,
+    transmission: (row.transmission as SaleDetails["transmission"]) ?? null,
+    transmissionDetail: row.transmissionDetail ?? null,
+    engine: row.engine ?? null,
+    owners: row.owners ?? null,
+    yearsOwned: row.yearsOwned ?? null,
+    titleStatus: row.titleStatus ?? null,
+    flags: parseJsonList(row.flags),
+    summary: row.summary,
+  };
+}
+
+function rowToSale(row: typeof schema.sales.$inferSelect, details?: typeof schema.saleDetails.$inferSelect | null): Sale {
   return {
     id: row.id,
     generationId: row.generationId,
@@ -152,6 +181,7 @@ function rowToSale(row: typeof schema.sales.$inferSelect): Sale {
     color: row.color ?? null,
     conditionNotes: row.conditionNotes ?? null,
     sold: row.sold ?? true,
+    details: rowToDetails(details),
   };
 }
 
@@ -199,16 +229,18 @@ export async function getTopMovers(direction: "gainers" | "losers", limit = 8): 
 
 /** Latest completed sales with their car, in one query. */
 export async function getRecentSales(limit = 10): Promise<(Sale & { generation: GenerationWithDetails })[]> {
-  await dbReady();
+  await ensureAuxTables();
   const rows = await db
     .select({
       sale: schema.sales,
+      details: schema.saleDetails,
       gen: schema.generations,
       model: schema.models,
       make: schema.makes,
       stats: schema.generationStats,
     })
     .from(schema.sales)
+    .leftJoin(schema.saleDetails, eq(schema.saleDetails.saleId, schema.sales.id))
     .innerJoin(schema.generations, eq(schema.sales.generationId, schema.generations.id))
     .innerJoin(schema.models, eq(schema.generations.modelId, schema.models.id))
     .innerJoin(schema.makes, eq(schema.models.makeId, schema.makes.id))
@@ -218,7 +250,7 @@ export async function getRecentSales(limit = 10): Promise<(Sale & { generation: 
     .limit(limit)
     .all();
 
-  return rows.map((r) => ({ ...rowToSale(r.sale), generation: rowToGenerationWithDetails(r) }));
+  return rows.map((r) => ({ ...rowToSale(r.sale, r.details), generation: rowToGenerationWithDetails(r) }));
 }
 
 export async function searchGenerations(query: string): Promise<GenerationWithDetails[]> {
