@@ -6,6 +6,7 @@
 import { client, batchWrite } from "../db";
 import { ensureExtractionTables, type SaleListing } from "../listings";
 import { extractionInputHash } from "./prompt";
+import { pruneBoilerplate } from "./prune";
 import { CONDITION_FLAGS, type ConditionFlag, type ExtractionInput } from "./schema";
 import type { ExtractionResult } from "./extract";
 import type { InStatement } from "@libsql/client";
@@ -24,11 +25,33 @@ export interface PendingOptions {
   includeExcerptOnly?: boolean;
   /** Restrict to these sale ids (eval / targeted re-runs) */
   saleIds?: string[];
+  /** Bid-not-met listings are never shown as sales; skip them unless asked (default true) */
+  soldOnly?: boolean;
 }
 
 function carLabel(row: Record<string, unknown>): string {
   const years = `${row.year_start}–${row.year_end ?? "present"}`;
   return `${row.make_name} ${row.model_name} — ${row.gen_name} (${years})`;
+}
+
+/** The model input for one listing row: stored text, boilerplate pruned. */
+function rowToInput(row: Record<string, unknown>): ExtractionInput {
+  let essentials: string[] = [];
+  if (typeof row.essentials === "string") {
+    try {
+      essentials = JSON.parse(row.essentials);
+    } catch {
+      essentials = [];
+    }
+  }
+  const description = row.description === null || row.description === undefined ? "" : String(row.description);
+  return {
+    title: String(row.title),
+    essentials,
+    description: pruneBoilerplate(description).text,
+    closedOn: row.sale_date === null || row.sale_date === undefined ? null : String(row.sale_date),
+    car: carLabel(row),
+  };
 }
 
 /**
@@ -37,8 +60,15 @@ function carLabel(row: Record<string, unknown>): string {
  * Newest sales first, so a capped refresh run covers what users see first.
  */
 export async function getPendingSales(options: PendingOptions): Promise<PendingSale[]> {
-  const { model, limit = 50, includeExcerptOnly = false, saleIds } = options;
+  const { model, limit = 50, includeExcerptOnly = false, saleIds, soldOnly = true } = options;
   await ensureExtractionTables();
+  const where: string[] = [];
+  const args: string[] = [];
+  if (saleIds && saleIds.length) {
+    where.push(`s.id IN (${saleIds.map(() => "?").join(",")})`);
+    args.push(...saleIds);
+  }
+  if (soldOnly) where.push("s.sold = 1");
   const res = await client.execute({
     sql: `SELECT s.id, s.sale_date, l.title, l.essentials, l.description, l.text_source,
                  d.input_hash AS existing_hash,
@@ -49,9 +79,9 @@ export async function getPendingSales(options: PendingOptions): Promise<PendingS
           JOIN models m ON m.id = g.model_id
           JOIN makes mk ON mk.id = m.make_id
           LEFT JOIN sale_details d ON d.sale_id = s.id
-          ${saleIds && saleIds.length ? `WHERE s.id IN (${saleIds.map(() => "?").join(",")})` : ""}
+          ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
           ORDER BY s.sale_date DESC, s.id`,
-    args: saleIds && saleIds.length ? saleIds : [],
+    args,
   });
 
   const pending: PendingSale[] = [];
@@ -59,21 +89,7 @@ export async function getPendingSales(options: PendingOptions): Promise<PendingS
     const row = raw as Record<string, unknown>;
     const textSource = row.text_source as SaleListing["textSource"];
     if (textSource === "excerpt" && !includeExcerptOnly) continue;
-    let essentials: string[] = [];
-    if (typeof row.essentials === "string") {
-      try {
-        essentials = JSON.parse(row.essentials);
-      } catch {
-        essentials = [];
-      }
-    }
-    const input: ExtractionInput = {
-      title: String(row.title),
-      essentials,
-      description: row.description === null ? "" : String(row.description),
-      closedOn: row.sale_date === null ? null : String(row.sale_date),
-      car: carLabel(row),
-    };
+    const input = rowToInput(row);
     const inputHash = extractionInputHash(input, model);
     if (row.existing_hash === inputHash) continue;
     pending.push({ saleId: String(row.id), input, inputHash, textSource });
@@ -103,24 +119,10 @@ export async function getExtractionInputsByUrls(urls: string[]): Promise<Map<str
     });
     for (const raw of res.rows) {
       const row = raw as Record<string, unknown>;
-      let essentials: string[] = [];
-      if (typeof row.essentials === "string") {
-        try {
-          essentials = JSON.parse(row.essentials);
-        } catch {
-          essentials = [];
-        }
-      }
       out.set(String(row.source_url), {
         saleId: String(row.id),
         textSource: row.text_source as SaleListing["textSource"],
-        input: {
-          title: String(row.title),
-          essentials,
-          description: row.description === null ? "" : String(row.description),
-          closedOn: row.sale_date === null ? null : String(row.sale_date),
-          car: carLabel(row),
-        },
+        input: rowToInput(row),
       });
     }
   }

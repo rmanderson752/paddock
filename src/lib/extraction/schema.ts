@@ -9,7 +9,7 @@ import { z } from "zod";
 import { CONDITION_FLAGS } from "../types";
 
 /** Bump whenever the schema, the system prompt or the examples change. */
-export const PROMPT_VERSION = "2026-09-15.1";
+export const PROMPT_VERSION = "2026-09-15.2";
 
 export const COLOR_FAMILIES = [
   "red", "blue", "white", "black", "silver", "grey", "yellow", "green",

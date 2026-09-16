@@ -134,6 +134,8 @@ export interface FetchListingsOptions {
   delayMs?: number;
   /** Only sales whose source_url contains this text */
   urlFilter?: string;
+  /** Bid-not-met listings are never shown; skip their pages unless asked (default true) */
+  soldOnly?: boolean;
   /** Stop after this long even if pages remain (a serverless run has a hard ceiling) */
   timeBudgetMs?: number;
   log?: (message: string) => void;
@@ -169,7 +171,7 @@ async function withRetry(fn: () => Promise<void>, log: (m: string) => void, atte
  * makes steady progress across runs; a refresh calls this with a small limit.
  */
 export async function fetchMissingListings(options: FetchListingsOptions = {}): Promise<FetchListingsSummary> {
-  const { limit = 25, delayMs = 2500, urlFilter, fetchImpl, timeBudgetMs } = options;
+  const { limit = 25, delayMs = 2500, urlFilter, fetchImpl, timeBudgetMs, soldOnly = true } = options;
   const deadline = timeBudgetMs ? Date.now() + timeBudgetMs : Infinity;
   const log = options.log ?? (() => {});
   await ensureExtractionTables();
@@ -181,6 +183,7 @@ export async function fetchMissingListings(options: FetchListingsOptions = {}): 
           WHERE s.source = 'bat'
             AND s.source_url LIKE 'https://bringatrailer.com/listing/%'
             AND (l.sale_id IS NULL OR l.text_source = 'excerpt')
+            ${soldOnly ? "AND s.sold = 1" : ""}
             ${urlFilter ? "AND s.source_url LIKE ?" : ""}
           ORDER BY s.sale_date DESC, s.id`,
     args: urlFilter ? [`%${urlFilter}%`] : [],

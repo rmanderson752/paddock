@@ -16,7 +16,9 @@ npm run eval:extraction -- --predictions evals/extraction/results/predictions-<s
 Needs `ANTHROPIC_API_KEY` in `.env.local` (except `--dry` / `--predictions`).
 Database-backed cases read listing text from the configured database
 (`TURSO_DATABASE_URL` or the local file) — run `npm run db:listings` first if
-they're reported as missing.
+they're reported as missing. They go through the same boilerplate pruning
+(`src/lib/extraction/prune.ts`) as production, so the eval sees exactly what
+the pipeline sends.
 
 ## Cases
 

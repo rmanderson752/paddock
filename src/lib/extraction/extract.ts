@@ -63,12 +63,17 @@ function getClient(client?: Anthropic): Anthropic {
   return sharedClient;
 }
 
-/** The request body both the sync and batch paths send. */
-export function buildRequest(input: ExtractionInput, model: string, effort?: Effort): MessageCreateParamsNonStreaming {
+/**
+ * The request body both the sync and batch paths send. A batch's requests
+ * are processed over up to an hour, so its prompt cache uses the 1-hour TTL
+ * (one write at 2× instead of many 5-minute rewrites); sync calls arrive in
+ * bursts and the default 5 minutes is enough.
+ */
+export function buildRequest(input: ExtractionInput, model: string, effort?: Effort, { batch = false } = {}): MessageCreateParamsNonStreaming {
   return {
     model,
     max_tokens: MAX_TOKENS,
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: batch ? { type: "ephemeral", ttl: "1h" } : { type: "ephemeral" } }],
     messages: [{ role: "user", content: buildUserMessage(input) }],
     output_config: {
       format: zodOutputFormat(ExtractedListingSchema),
@@ -188,7 +193,7 @@ export async function submitExtractionBatch(items: BatchItem[], options: Extract
   const batch = await client.messages.batches.create({
     requests: items.map((item) => ({
       custom_id: item.customId,
-      params: buildRequest(item.input, model, effort),
+      params: buildRequest(item.input, model, effort, { batch: true }),
     })),
   });
   return { batchId: batch.id, model, promptVersion: PROMPT_VERSION, count: items.length, submittedAt: new Date().toISOString() };

@@ -20,6 +20,7 @@ export interface ExtractPendingOptions extends ExtractOptions {
   limit?: number;
   concurrency?: number;
   includeExcerptOnly?: boolean;
+  soldOnly?: boolean;
   saleIds?: string[];
   /** Stop starting new extractions after this long (a serverless run has a hard ceiling) */
   timeBudgetMs?: number;
@@ -48,6 +49,7 @@ export async function extractPendingSales(options: ExtractPendingOptions = {}): 
     model,
     limit: options.limit ?? 50,
     includeExcerptOnly: options.includeExcerptOnly,
+    soldOnly: options.soldOnly,
     saleIds: options.saleIds,
   });
   summary.pending = pending.length;

@@ -14,6 +14,7 @@
  *   npx tsx scripts/extract-details.ts --collect <batchId> # store the results of an ended batch
  *   npx tsx scripts/extract-details.ts --model claude-sonnet-5 --effort medium
  *   npx tsx scripts/extract-details.ts --include-excerpts  # don't wait for listing pages
+ *   npx tsx scripts/extract-details.ts --include-unsold    # bid-not-met listings too (skipped by default)
  */
 
 import "./env";
@@ -107,17 +108,18 @@ async function main() {
   const effort = arg("effort") as Effort | undefined;
   const limit = Number(arg("limit") ?? 100_000);
   const includeExcerptOnly = flag("include-excerpts");
+  const soldOnly = !flag("include-unsold");
 
   const collectId = arg("collect");
   if (collectId) return collect(collectId);
 
   if (flag("sync")) {
-    const summary = await extractPendingSales({ model, effort, limit, includeExcerptOnly, concurrency: 4, log: (m) => console.log(m) });
+    const summary = await extractPendingSales({ model, effort, limit, includeExcerptOnly, soldOnly, concurrency: 4, log: (m) => console.log(m) });
     console.log(`\n${summary.extracted} extracted, ${summary.failed} failed, $${summary.costUsd.toFixed(3)}`);
     return;
   }
 
-  const pending = await getPendingSales({ model, limit, includeExcerptOnly });
+  const pending = await getPendingSales({ model, limit, includeExcerptOnly, soldOnly });
   if (pending.length === 0) {
     console.log("Nothing pending — every stored listing has an extraction for this prompt version and model");
     return;

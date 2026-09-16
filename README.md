@@ -153,7 +153,11 @@ summary.
   exact input, the raw JSON, token usage, cost and latency. Unchanged inputs
   are never re-extracted; a new prompt version re-extracts everything.
 - **Paths**: the refresh job extracts new sales synchronously (bounded per run);
-  backfills go through the Batch API at half price (`npm run db:extract`).
+  backfills go through the Batch API at half price with a 1-hour prompt cache
+  (`npm run db:extract`). Bid-not-met listings are skipped by default — they
+  are never shown as sales — and the write-up is pruned of sentences that
+  never carry a fact (gauge tours, factory power ratings, tire brands,
+  "see the gallery"), about 12% of the input, before it reaches the model.
 - **Promotion**: mileage (converted to miles), the seller's colour name and the
   summary are copied onto `sales`, so charts, filters and the sale record
   improve without knowing the pipeline exists. Colour-family and gearbox
