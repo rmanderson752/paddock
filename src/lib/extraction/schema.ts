@@ -65,7 +65,7 @@ export const ExtractedListingSchema = z.object({
     .describe("Factory options or special equipment that move value, each a short phrase ('limited-slip differential', 'sport seats', 'Fiorano handling package'). Empty when none are stated."),
   summary: z
     .string()
-    .describe("One or two neutral sentences, at most 240 characters, with what a buyer most needs to know: spec, ownership history, condition. Only facts present in the text; no price or bid, no marketing language, no restating the year/make/model."),
+    .describe("One or two neutral sentences, at most 40 words, with what a buyer most needs to know: spec, ownership history, condition. Only facts present in the text; no price or bid, no marketing language, no restating the year/make/model."),
 });
 
 export type ExtractedListing = z.infer<typeof ExtractedListingSchema>;
@@ -82,5 +82,9 @@ export interface ExtractionInput {
   car: string | null;
 }
 
-/** Hard cap applied after the fact; the prompt asks for 240 and the model overshoots a little */
-export const SUMMARY_MAX_CHARS = 260;
+/**
+ * Hard cap applied after the fact. The prompt asks for 40 words (~240
+ * characters); models overshoot by up to a third, and a clean cut at a
+ * sentence or clause is better than a clipped one, so the cap sits well above.
+ */
+export const SUMMARY_MAX_CHARS = 320;

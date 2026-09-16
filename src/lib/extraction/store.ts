@@ -8,7 +8,8 @@ import { ensureExtractionTables, type SaleListing } from "../listings";
 import { extractionInputHash } from "./prompt";
 import { pruneBoilerplate } from "./prune";
 import { CONDITION_FLAGS, type ConditionFlag, type ExtractionInput } from "./schema";
-import type { ExtractionResult } from "./extract";
+import { normalize, type ExtractionResult } from "./extract";
+import { ExtractedListingSchema } from "./schema";
 import type { InStatement } from "@libsql/client";
 
 export interface PendingSale {
@@ -216,6 +217,44 @@ export async function promoteDetailsToSales(saleIds?: string[]): Promise<number>
     };
   });
   await batchWrite(statements);
+  return statements.length;
+}
+
+/**
+ * Re-run `normalize` over every stored raw response and rewrite the derived
+ * columns — for post-processing changes (summary cap, list clean-up) that
+ * don't need the model again. Returns the number of rows rewritten.
+ */
+export async function renormalizeStoredDetails(): Promise<number> {
+  await ensureExtractionTables();
+  const res = await client.execute("SELECT sale_id, raw_json FROM sale_details");
+  const statements: InStatement[] = [];
+  for (const row of res.rows) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(String(row.raw_json));
+    } catch {
+      continue;
+    }
+    const valid = ExtractedListingSchema.safeParse(parsed);
+    if (!valid.success) continue;
+    const d = normalize(valid.data);
+    statements.push({
+      sql: `UPDATE sale_details SET
+              mileage = ?, mileage_unit = ?, mileage_tmu = ?, exterior_color = ?, color_family = ?, interior_color = ?,
+              transmission = ?, transmission_detail = ?, engine = ?, owners = ?, years_owned = ?, title_status = ?,
+              flags = ?, modifications = ?, notable_options = ?, summary = ?
+            WHERE sale_id = ?`,
+      args: [
+        d.mileage, d.mileage_unit, d.mileage_tmu ? 1 : 0, d.exterior_color, d.color_family, d.interior_color,
+        d.transmission, d.transmission_detail, d.engine, d.owners, d.years_owned, d.title_status,
+        JSON.stringify(d.flags), JSON.stringify(d.modifications), JSON.stringify(d.notable_options), d.summary,
+        String(row.sale_id),
+      ],
+    });
+  }
+  await batchWrite(statements);
+  await promoteDetailsToSales();
   return statements.length;
 }
 

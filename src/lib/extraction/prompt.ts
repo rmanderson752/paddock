@@ -25,7 +25,7 @@ Rules
 
 8. Title status comes only from title language: "clean title" → clean; "salvage title" → salvage; "rebuilt title" → rebuilt (when both salvage and rebuilt brands are listed, the car is rebuilt); bill of sale, bonded title, or sold on a registration or export certificate because no title exists → other. A plain "a Texas title", a duplicate title, a lien, a clean Carfax, or an odometer notation such as "Exempt" or "Not Actual" says nothing about title status → null.
 
-9. The summary is one or two neutral sentences of at most 240 characters covering spec, ownership history and condition, in that order of priority. Only facts present in the text. No sale price or bid amount, no superlatives or sales language, no restating the year, make and model that the title already gives. Numbers in the summary must appear in the listing.
+9. The summary is one or two neutral sentences, at most 40 words, covering spec, ownership history and condition, in that order of priority. Only facts present in the text. No sale price or bid amount, no superlatives or sales language, no restating the year, make and model that the title already gives. Numbers in the summary must appear in the listing.
 10. When a field is not stated, use null (or false for mileage_tmu, and an empty array for lists). Never guess.
 
 Worked example 1
@@ -74,6 +74,10 @@ This 2004 Ferrari 360 Modena is finished in Rosso Corsa over Nero leather and is
 
 Output
 {"mileage":31000,"mileage_unit":"mi","mileage_tmu":false,"exterior_color":"Rosso Corsa","color_family":"red","interior_color":"Nero","transmission":"automatic","transmission_detail":"Six-Speed F1 Automated Manual Transaxle","engine":"3.6-Liter V8","owners":null,"years_owned":1,"title_status":"clean","flags":["accident_history","repaint","modified","needs_work"],"modifications":["Tubi exhaust system","Challenge-style rear grilles"],"notable_options":[],"summary":"Rosso Corsa over Nero leather with the F1 gearbox and a Tubi exhaust; 31k miles, timing belts done in 2023, a 2011 front-end accident with a repainted bumper, and an illuminated check-engine light."}`;
+
+// PROMPT_VERSION (schema.ts) is bumped when a change can alter an extracted
+// field. Wording that only shapes the summary's length is not bumped, so a
+// tweak here doesn't send every stored listing back through the model.
 
 /** The per-sale user message. Deterministic for a given input. */
 export function buildUserMessage(input: ExtractionInput): string {

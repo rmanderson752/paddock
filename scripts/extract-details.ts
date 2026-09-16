@@ -15,12 +15,14 @@
  *   npx tsx scripts/extract-details.ts --model claude-sonnet-5 --effort medium
  *   npx tsx scripts/extract-details.ts --include-excerpts  # don't wait for listing pages
  *   npx tsx scripts/extract-details.ts --include-unsold    # bid-not-met listings too (skipped by default)
+ *   npx tsx scripts/extract-details.ts --renormalize       # re-apply post-processing to stored raw JSON, no API calls
  */
 
 import "./env";
 import * as fs from "fs";
 import * as path from "path";
 import {
+  renormalizeStoredDetails,
   collectExtractionBatch,
   extractPendingSales,
   getBatchStatus,
@@ -101,6 +103,11 @@ async function collect(batchId: string): Promise<void> {
 }
 
 async function main() {
+  if (flag("renormalize")) {
+    const n = await renormalizeStoredDetails();
+    console.log(`re-normalized ${n} stored extractions and promoted them onto sales`);
+    return;
+  }
   if (!isConfigured()) {
     console.error("ANTHROPIC_API_KEY is not set (add it to .env.local)");
     process.exit(1);
