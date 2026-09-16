@@ -167,8 +167,20 @@ summary.
   accuracy/precision/recall, flag F1, summary faithfulness checks, cost and
   p50/p95 latency per model and effort level.
 
-Requires `ANTHROPIC_API_KEY`. `EXTRACTION_MODEL` (default `claude-opus-5`)
-and `EXTRACTION_EFFORT` pick the model and effort level.
+Requires `ANTHROPIC_API_KEY`. The default is Sonnet 5 at medium effort,
+chosen by the eval (below); `EXTRACTION_MODEL` and `EXTRACTION_EFFORT`
+override it.
+
+| Model / effort | Core score | Flags F1 | $/listing | p50 |
+| --- | --- | --- | --- | --- |
+| Opus 5 / default | 100.0% | 100.0% | $0.026 | 7.4 s |
+| Opus 5 / low | 99.8% | 98.6% | $0.019 | 4.6 s |
+| **Sonnet 5 / medium** | **99.6%** | **98.7%** | **$0.011** | 6.7 s |
+| Haiku 4.5 | 96.2% | 89.1% | $0.003 | 3.0 s |
+
+71 labelled listings, prompt `2026-09-16.2`; odometer, TMU, colour family,
+gearbox and title status were 100% on every model except Haiku's title
+status. Full table: `npm run eval:compare`.
 
 ## Design
 
@@ -194,7 +206,7 @@ colours live in `src/lib/theme.ts`.
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Production database on Turso; the URL overrides `DATABASE_PATH` |
 | `CRON_SECRET` | Protects `/api/cron/refresh` (required on Vercel) |
 | `ANTHROPIC_API_KEY` | Enables listing extraction (refresh job, admin button, `db:extract`, the eval) |
-| `EXTRACTION_MODEL` / `EXTRACTION_EFFORT` | Default `claude-opus-5`; effort `low`–`max` (model default when unset) |
+| `EXTRACTION_MODEL` / `EXTRACTION_EFFORT` | Default `claude-sonnet-5` / `medium`; effort `low`–`max` |
 | `REFRESH_LISTING_PAGES` / `REFRESH_EXTRACTIONS` | Per-refresh caps, default 25 pages and 50 extractions |
 | `REFRESH_SCHEDULE_ENABLED` | `true` to run the refresh schedule inside a long-running Next.js server |
 | `REFRESH_SCHEDULE` | Defaults to `mon 00:01, thu 00:01` (server local time) |

@@ -29,6 +29,7 @@ import {
   ExtractionError,
   ExtractedListingSchema,
   PROMPT_VERSION,
+  SUMMARY_MAX_CHARS,
   type Effort,
   type ExtractedListing,
   type ExtractionInput,
@@ -199,7 +200,7 @@ function printReport(s: RunSummary) {
   }
   const su = m.summary;
   console.log(
-    `summary: ≤220 chars ${su.withinLength}/${su.n} · ≤2 sentences ${su.atMostTwoSentences}/${su.n} · no price ${su.noPrice}/${su.n} · numbers grounded ${su.numbersGrounded}/${su.n} · mean ${Math.round(su.meanLength)} chars`
+    `summary: ≤${SUMMARY_MAX_CHARS} chars ${su.withinLength}/${su.n} · ≤2 sentences ${su.atMostTwoSentences}/${su.n} · no price ${su.noPrice}/${su.n} · numbers grounded ${su.numbersGrounded}/${su.n} · mean ${Math.round(su.meanLength)} chars`
   );
   console.log("─".repeat(72));
   console.log(

@@ -89,10 +89,19 @@ describe("normalize", () => {
   });
 
   it("caps the summary at a sentence boundary", () => {
-    const long = "First sentence about the car and its history in some detail. " + "Second sentence with more words about condition and records. " + "Third sentence that pushes well past the two hundred and twenty character limit for a summary.";
+    const long = "First sentence about the car and its history in some detail. " + "Second sentence with more words about condition and records. " + "Third sentence that pushes well past the two hundred and sixty character limit for a summary, with extra words to make sure of it, and then some more.";
     const out = normalize({ ...sample, summary: long });
-    expect(out.summary.length).toBeLessThanOrEqual(220);
+    expect(out.summary.length).toBeLessThanOrEqual(260);
     expect(out.summary.endsWith(".")).toBe(true);
+    expect(out.summary).not.toContain("and then some more");
+  });
+
+  it("closes a clause-level cut with a period instead of a dangling semicolon", () => {
+    const long = "Grand Prix White over black leather with the G50 five-speed and a limited-slip differential; owned since 1996, 149k miles, engine rebuilt in 2015 with a GT35R turbo and larger intercooler, gearbox rebuilt in 2018, panels repainted, valve-cover oil leak noted, records included";
+    const out = normalize({ ...sample, summary: long });
+    expect(out.summary.length).toBeLessThanOrEqual(260);
+    expect(out.summary.endsWith(".")).toBe(true);
+    expect(out.summary).not.toMatch(/[;,]\.$/);
   });
 });
 

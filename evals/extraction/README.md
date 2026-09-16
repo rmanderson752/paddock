@@ -71,8 +71,25 @@ case, and p50 / p95 latency.
 
 Each run writes `results/<stamp>-<model>[-effort].json` (aggregate metrics plus
 per-case grades) and `results/predictions-<stamp>-…jsonl` (raw outputs, not
-committed). Record headline numbers here when they inform a decision:
+committed). `npm run eval:compare` prints every run side by side
+(`--markdown` for the table below); the per-case JSON is where to look when a
+number moves.
 
-| Date | Model / effort | Prompt | Cases | Core score | Flags F1 | $/case | p50 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| _pending — first run needs an API key_ | | | | | | | |
+| Run | Model / effort | Prompt | Cases | Core | Flags F1 | Mileage | TMU | Colour | Gearbox | Title | Summary ok | $/case | Cache | p50 | p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-09-16 | opus-5 | 2026-09-16.2 | 71 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 69/71 | $0.0256 | 83.7% | 7.4s | 12.3s |
+| 2026-09-16 | opus-5 / low | 2026-09-16.2 | 71 | 99.8% | 98.6% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 69/71 | $0.0194 | 83.7% | 4.6s | 6.7s |
+| 2026-09-16 | sonnet-5 / medium | 2026-09-16.2 | 71 | 99.6% | 98.7% | 100.0% | 100.0% | 100.0% | 100.0% | 98.6% | 71/71 | $0.0111 | 83.7% | 6.7s | 13.0s |
+| 2026-09-16 | haiku-4-5 | 2026-09-16.2 | 71 | 96.2% | 89.1% | 100.0% | 100.0% | 100.0% | 100.0% | 84.5% | 70/71 | $0.0028 | 84.1% | 3.0s | 11.5s |
+
+Decision (2026-09-16): **Sonnet 5 at medium effort** is the production
+default — within 0.4 points of Opus 5 on the core score and 1.3 on flag F1,
+at 43% of the cost. Haiku 4.5 is out: it misses a third of the title-status
+calls and a tenth of the flags. Every miss in the Opus and Sonnet runs was a
+borderline call (a dealer's "years owned", a binder of "documentation" vs.
+service records, a reinforced subframe as a modification); the first Opus
+run also caught three labels that contradicted the rules, which is what the
+golden set is for.
+
+"Summary ok" is the numbers-grounded check; the two Opus misses were a "2"
+for "two owners" and "4,100k" for 4,100 km — formatting, not invention.

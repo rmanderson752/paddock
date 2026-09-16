@@ -19,6 +19,7 @@
     "db:listings": "npx tsx scripts/backfill-listings.ts",
     "db:extract": "npx tsx scripts/extract-details.ts",
     "eval:extraction": "npx tsx evals/extraction/run.ts",
+    "eval:compare": "npx tsx evals/extraction/compare.ts",
     "db:generate": "npx drizzle-kit generate",
     "db:studio": "npx drizzle-kit studio",
     "schedule:install": "bash scripts/schedule/install.sh",

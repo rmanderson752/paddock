@@ -9,7 +9,7 @@ import { z } from "zod";
 import { CONDITION_FLAGS } from "../types";
 
 /** Bump whenever the schema, the system prompt or the examples change. */
-export const PROMPT_VERSION = "2026-09-15.2";
+export const PROMPT_VERSION = "2026-09-16.2";
 
 export const COLOR_FAMILIES = [
   "red", "blue", "white", "black", "silver", "grey", "yellow", "green",
@@ -56,7 +56,7 @@ export const ExtractedListingSchema = z.object({
     .describe("'clean' when a clean title is stated; 'salvage'/'rebuilt' when branded; 'other' for bonded, bill-of-sale, export-only etc. null when the listing does not say. A clean *Carfax* alone does not establish title status."),
   flags: z
     .array(z.enum(CONDITION_FLAGS))
-    .describe("Every flag the text supports, none it doesn't. accident_history: a stated accident, collision, damage entry or accident repair (a clean history report is not a flag). repaint: full or partial repaint or refinished body panels (not touch-ups, wraps or refinished wheels). engine_replaced_or_rebuilt: engine swapped, replaced, overhauled or rebuilt (not an engine-out service, reseal or timing-belt job). rust_or_corrosion: rust, corrosion or bubbling noted, even if since repaired. modified: any non-factory change (set whenever modifications is non-empty). track_use: actual track, HPDE, autocross or race use. needs_work: mechanical or functional problems — faults, leaks, warning lights, inoperative items, failed inspections, work the seller says is needed (cosmetic wear alone does not count). service_records: service records, invoices or receipts accompany the car (a history report, window sticker or manual does not count)."),
+    .describe("Every flag the text supports, none it doesn't. accident_history: a stated accident, collision, damage entry or accident repair (a clean history report is not a flag). repaint: full or partial repaint or refinished body panels (not touch-ups, wraps or refinished wheels). engine_replaced_or_rebuilt: engine swapped, replaced, overhauled or rebuilt, including pistons or rings replaced (bearings, seals, an engine-out service, a reseal or a timing-belt job alone are service). rust_or_corrosion: rust, corrosion or bubbling noted, even if since repaired. modified: any non-factory change (set whenever modifications is non-empty). track_use: actual track, HPDE, autocross or race use. needs_work: mechanical or functional problems — faults, leaks, warning lights, inoperative items, failed inspections, work the seller says is needed (cosmetic wear alone does not count). service_records: service records, invoices or receipts accompany the car (a history report, window sticker or manual does not count)."),
   modifications: z
     .array(z.string())
     .describe("Non-factory changes, each a short phrase ('aftermarket exhaust', 'lowering springs', 'ECU tune'). Empty when stock or unstated. Non-empty implies the 'modified' flag."),
@@ -65,7 +65,7 @@ export const ExtractedListingSchema = z.object({
     .describe("Factory options or special equipment that move value, each a short phrase ('limited-slip differential', 'sport seats', 'Fiorano handling package'). Empty when none are stated."),
   summary: z
     .string()
-    .describe("One or two neutral sentences, at most 220 characters, with what a buyer most needs to know: spec, ownership history, condition. Only facts present in the text; no price or bid, no marketing language, no restating the year/make/model."),
+    .describe("One or two neutral sentences, at most 240 characters, with what a buyer most needs to know: spec, ownership history, condition. Only facts present in the text; no price or bid, no marketing language, no restating the year/make/model."),
 });
 
 export type ExtractedListing = z.infer<typeof ExtractedListingSchema>;
@@ -82,4 +82,5 @@ export interface ExtractionInput {
   car: string | null;
 }
 
-export const SUMMARY_MAX_CHARS = 220;
+/** Hard cap applied after the fact; the prompt asks for 240 and the model overshoots a little */
+export const SUMMARY_MAX_CHARS = 260;

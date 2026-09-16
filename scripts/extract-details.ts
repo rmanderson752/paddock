@@ -27,6 +27,7 @@ import {
   getPendingSales,
   isConfigured,
   promoteDetailsToSales,
+  resolveEffort,
   resolveModel,
   saveExtractions,
   submitExtractionBatch,
@@ -105,7 +106,7 @@ async function main() {
     process.exit(1);
   }
   const model = resolveModel(arg("model"));
-  const effort = arg("effort") as Effort | undefined;
+  const effort = resolveEffort(arg("effort") as Effort | undefined);
   const limit = Number(arg("limit") ?? 100_000);
   const includeExcerptOnly = flag("include-excerpts");
   const soldOnly = !flag("include-unsold");

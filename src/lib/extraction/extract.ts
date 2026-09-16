@@ -9,11 +9,15 @@ import { ExtractedListingSchema, PROMPT_VERSION, SUMMARY_MAX_CHARS, type Extract
 import { SYSTEM_PROMPT, buildUserMessage, extractionInputHash } from "./prompt";
 import { estimateCostUsd, type TokenUsage } from "./pricing";
 
-export const DEFAULT_MODEL = "claude-opus-5";
+export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+
+// Chosen by the eval (evals/extraction/README.md): Sonnet 5 at medium effort
+// holds 99.6% core / 98.7% flag F1 against Opus 5's 100/100 at 43% of the
+// cost. Override with EXTRACTION_MODEL / EXTRACTION_EFFORT.
+export const DEFAULT_MODEL = "claude-sonnet-5";
+export const DEFAULT_EFFORT: Effort = "medium";
 // Adaptive thinking counts against max_tokens; the JSON itself is a few hundred
 const MAX_TOKENS = 16000;
-
-export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 
 export interface ExtractOptions {
   client?: Anthropic;
@@ -52,8 +56,8 @@ export function resolveModel(model?: string): string {
 }
 
 export function resolveEffort(effort?: Effort): Effort | undefined {
-  const e = effort ?? (process.env.EXTRACTION_EFFORT as Effort | undefined);
-  return e && ["low", "medium", "high", "xhigh", "max"].includes(e) ? e : undefined;
+  const e = effort ?? (process.env.EXTRACTION_EFFORT as Effort | undefined) ?? DEFAULT_EFFORT;
+  return ["low", "medium", "high", "xhigh", "max"].includes(e) ? e : undefined;
 }
 
 let sharedClient: Anthropic | null = null;
@@ -77,7 +81,8 @@ export function buildRequest(input: ExtractionInput, model: string, effort?: Eff
     messages: [{ role: "user", content: buildUserMessage(input) }],
     output_config: {
       format: zodOutputFormat(ExtractedListingSchema),
-      ...(effort ? { effort } : {}),
+      // Haiku 4.5 predates the effort parameter
+      ...(effort && !/haiku/.test(model) ? { effort } : {}),
     },
   };
 }
@@ -100,9 +105,13 @@ export function normalize(data: ExtractedListing): ExtractedListing {
   if (modifications.length > 0 && !flags.includes("modified")) flags.push("modified");
   let summary = data.summary.replace(/\s+/g, " ").trim();
   if (summary.length > SUMMARY_MAX_CHARS) {
+    // Cut at the last sentence end, else the last clause, and close it properly
     const cut = summary.slice(0, SUMMARY_MAX_CHARS);
-    const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("; "));
-    summary = end > SUMMARY_MAX_CHARS / 2 ? cut.slice(0, end + 1) : `${cut.replace(/[,;:\s]+$/, "")}…`;
+    const sentenceEnd = cut.lastIndexOf(". ");
+    const clauseEnd = Math.max(cut.lastIndexOf("; "), cut.lastIndexOf(", "));
+    if (sentenceEnd > SUMMARY_MAX_CHARS / 2) summary = cut.slice(0, sentenceEnd + 1);
+    else if (clauseEnd > SUMMARY_MAX_CHARS / 2) summary = `${cut.slice(0, clauseEnd)}.`;
+    else summary = `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:\s]+$/, "")}…`;
   }
   return {
     ...data,

@@ -66,6 +66,7 @@ export function normalizeText(s: string): string {
   return s
     .toLowerCase()
     .replace(/[“”"’']/g, "")
+    .replace(/&/g, " and ")
     .replace(/\bgray\b/g, "grey")
     .replace(/\bcolour\b/g, "color")
     .replace(/[^a-z0-9]+/g, " ")
@@ -88,11 +89,13 @@ export function fuzzyEquals(a: string, b: string): boolean {
   if (tx.size === 0 || ty.size === 0) return false;
   let shared = 0;
   for (const t of tx) if (ty.has(t)) shared++;
-  return shared >= 2 && shared / Math.max(tx.size, ty.size) >= 0.67;
+  return shared >= 2 && shared / Math.max(tx.size, ty.size) >= 0.66;
 }
 
+const STOPWORDS = new Set(["and", "with", "over", "the"]);
+
 function tokens(s: string): Set<string> {
-  return new Set(normalizeText(s).split(" ").filter((t) => t.length > 2));
+  return new Set(normalizeText(s).split(" ").filter((t) => t.length > 2 && !STOPWORDS.has(t)));
 }
 
 /** Two short phrases describe the same thing when they share half their tokens. */
